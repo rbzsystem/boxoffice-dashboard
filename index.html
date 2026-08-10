@@ -2285,6 +2285,22 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     var scopeName=scopeText();
     var parts=[];
     parts.push(scopeName);
+    // Date-range segment (2026-08-10, user request): the header always states the year
+    // span of the CURRENT result set — "2013 – present" on the full board, narrowing as
+    // filters do. Derived from the shown titles, not hardcoded; a max year at/after the
+    // current year reads "present". Skipped when an explicit year filter already names
+    // the years (next line) — the two would duplicate.
+    if(!S.years.length&&show.length){
+      var ymin=9999,ymax=0;
+      for(var yi=0;yi<show.length;yi++){
+        var yv=parseInt((show[yi].d||'').slice(0,4),10);
+        if(yv){if(yv<ymin)ymin=yv;if(yv>ymax)ymax=yv;}
+      }
+      if(ymax){
+        var nowY=new Date().getFullYear();
+        parts.push(ymin===ymax?String(ymin):(ymin+' – '+(ymax>=nowY?'present':ymax)));
+      }
+    }
     if(S.years.length) parts.push(S.years.slice().sort().reverse().join(', '));
     if(S.genres.length) parts.push(S.genres.join(S.gmode==='all'?' + ':' / '));
     if(S.subgenres.length) parts.push(S.subgenres.map(function(t){return SG_LABELS[t]||t;}).join(S.smode==='all'?' + ':' / '));
