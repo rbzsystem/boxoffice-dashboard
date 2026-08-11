@@ -2306,10 +2306,10 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     if(S.subgenres.length) parts.push(S.subgenres.map(function(t){return SG_LABELS[t]||t;}).join(S.smode==='all'?' + ':' / '));
     var plbl=peopleLabel(); if(plbl) parts.push(plbl);
     if(S.statuses.length) parts.push(statusLabel());
-    parts.push('('+show.length+' titles)');
+    parts.push(show.length+' titles');
     if(inComp){
       var ct=BYSLUG[S.comp];
-      parts=['Comp set: '+ct.t+' ('+ct.y+')','(target + '+(show.length-1)+' comps)'];
+      parts=['Comp set: '+ct.t+' ('+ct.y+')','target + '+(show.length-1)+' comps'];
     }
     document.getElementById('viewhead').textContent=parts.join(' · ');
 
