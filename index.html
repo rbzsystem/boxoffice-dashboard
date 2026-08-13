@@ -2280,8 +2280,16 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
         if(blay.min==null && blay.max==null) continue;
         var hv=metricValue(r,'hold',blay.wk);
         if(hv==null) return false;   // no hold data for the selected weekend yet -- excluded while active
-        if(blay.min!=null && hv<blay.min) return false;
-        if(blay.max!=null && hv>blay.max) return false;
+        // Normalize lo<=hi regardless of which box produced the larger number (found live,
+        // 2026-08-13): "min: dropped 30%" + "max: dropped 50%" is a completely natural pair to
+        // type, but as SIGNED values that's min=-30, max=-50 -- an inverted, permanently-empty
+        // range, because a milder decline (-30) is numerically larger than a worse one (-50).
+        // Sorting here means it doesn't matter which field the user reads as "worse" -- the
+        // filter always applies the pair as an actual [lo,hi] bracket.
+        var lo=blay.min, hi=blay.max;
+        if(lo!=null && hi!=null && lo>hi){var tmp=lo;lo=hi;hi=tmp;}
+        if(lo!=null && hv<lo) return false;
+        if(hi!=null && hv>hi) return false;
         continue;
       }
       var bmv=metricValue(r,blay.metric);
