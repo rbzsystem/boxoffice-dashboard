@@ -1964,9 +1964,13 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
       }).join('');
       var minMaxHtml;
       if(lay.metric==='hold'){
-        // Weekend picker -- which weekend's wk-over-wk change to read.
+        // Weekend picker -- which weekend's wk-over-wk change to read. Starts at Wk 2: weekend 1
+        // is the opening and (all but 2 rare platform-release records in the whole DB, 2026-08-13
+        // census) structurally has no prior weekend to hold against, so weekend_drop_pct is
+        // always null there -- offering "Wk 1" as a filterable option is a trap that returns
+        // zero results no matter the threshold (the bug the user hit).
         var wkOpts='<option value="0"'+(!lay.wk?' selected':'')+'>Latest captured</option>';
-        for(var w=1;w<=MAX_WK;w++) wkOpts+='<option value="'+w+'"'+(lay.wk===w?' selected':'')+'>Wk '+w+'</option>';
+        for(var w=2;w<=MAX_WK;w++) wkOpts+='<option value="'+w+'"'+(lay.wk===w?' selected':'')+'>Wk '+w+'</option>';
         var wkPicker='<select class="lay-wk" title="Which weekend'+"'"+'s wk-over-wk change to filter on">'+wkOpts+'</select>';
         var minSign=holdSign(lay.min), maxSign=holdSign(lay.max);
         minMaxHtml=wkPicker+
