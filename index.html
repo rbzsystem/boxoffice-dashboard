@@ -82,6 +82,14 @@ body.compmode .controls .ctl-view{opacity:1;pointer-events:auto}
 .moneywrap{position:relative;display:inline-flex;align-items:center}
 .moneywrap .cur{position:absolute;left:10px;color:var(--dim);font-size:13px;font-weight:600;pointer-events:none}
 .moneywrap input.thr{padding-left:19px}
+/* Hold min/max: tap-toggle direction button + a magnitude-only input (no minus key needed --
+   see the renderBoLayers comment). Red/green mirrors the trajectory table's decline/growth cue. */
+.holdwrap{display:inline-flex;align-items:center;gap:4px}
+.holdwrap input.thr{min-width:56px;width:64px}
+.signtog{flex:0 0 auto;width:34px;height:34px;border-radius:8px;background:var(--panel);border:1px solid var(--line);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.signtog:hover{border-color:#3c4760}
+.signtog[data-sign="down"]{color:#e08a8a}
+.signtog[data-sign="up"]{color:#5DE08A}
 /* Advanced filters — second-tier disclosure below the primary bar (both breakpoints) */
 .adv-toggle{flex:1 1 100%;display:flex;align-items:center;gap:10px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:11px 15px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-top:2px}
 .adv-toggle:hover{border-color:var(--accent)}
@@ -178,8 +186,8 @@ input.thr.scr{min-width:64px;width:96px}
   .ctl select,.ctl input[type=search],.ctl input.thr{width:100%;max-width:none;min-width:0}
   .datewrap{width:100%}
   .datewrap input[type=date]{flex:1;width:auto}
-  .moneywrap,.pctwrap{display:flex;width:100%}
-  .moneywrap input.thr,.pctwrap input.thr{flex:1;width:100%}
+  .moneywrap,.pctwrap,.holdwrap{display:flex;width:100%}
+  .moneywrap input.thr,.pctwrap input.thr,.holdwrap input.thr{flex:1;width:100%}
   .reset{width:100%;align-self:stretch;padding:11px;font-size:13px}
   .gwrap,.gbtn{width:100%;max-width:none}
   .gpanel{width:100%}
@@ -1940,6 +1948,13 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     if(metric==='share'||metric==='ibodbo') return String(n);
     return formatMoney(n);
   }
+  // Hold min/max: a mobile numeric keypad (inputmode="numeric") never offers a "-" key, so a
+  // signed text field is unusable on phones for a metric that's negative in the common case
+  // (a decline). Fixed 2026-08-13 (user report): the visible input takes only the MAGNITUDE
+  // (always non-negative, plain numeric keypad works everywhere) and a tap-toggle button picks
+  // the direction (dropped/grew) -- no minus key needed on any device.
+  function holdSign(n){return (n!=null&&n>0)?'up':'down';}
+  function holdSignGlyph(sign){return sign==='up'?'&#9650;':'&#9660;';}
   function renderBoLayers(){
     document.getElementById('bo-layers').innerHTML=S.boLayers.map(function(lay,idx){
       var ui=METRIC_UI[lay.metric]||METRIC_UI.ww, used={};
@@ -1947,20 +1962,28 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
       var opts=BO_METRICS.map(function(m){
         return '<option value="'+m[0]+'"'+(lay.metric===m[0]?' selected':'')+(used[m[0]]?' disabled':'')+'>'+m[1]+'</option>';
       }).join('');
-      // Weekend picker: only for the Hold metric -- which weekend's wk-over-wk change to read.
-      var wkPicker='';
+      var minMaxHtml;
       if(lay.metric==='hold'){
+        // Weekend picker -- which weekend's wk-over-wk change to read.
         var wkOpts='<option value="0"'+(!lay.wk?' selected':'')+'>Latest captured</option>';
         for(var w=1;w<=MAX_WK;w++) wkOpts+='<option value="'+w+'"'+(lay.wk===w?' selected':'')+'>Wk '+w+'</option>';
-        wkPicker='<select class="lay-wk" title="Which weekend'+"'"+'s wk-over-wk change to filter on">'+wkOpts+'</select>';
+        var wkPicker='<select class="lay-wk" title="Which weekend'+"'"+'s wk-over-wk change to filter on">'+wkOpts+'</select>';
+        var minSign=holdSign(lay.min), maxSign=holdSign(lay.max);
+        minMaxHtml=wkPicker+
+          '<div class="holdwrap"><button type="button" class="signtog lay-min-sign" data-sign="'+minSign+'" title="Tap to switch dropped/grew" aria-label="Direction">'+holdSignGlyph(minSign)+'</button>'+
+            '<input type="text" inputmode="numeric" class="thr lay-min" placeholder="min %" value="'+(lay.min!=null?Math.abs(lay.min):'')+'"></div>'+
+          '<div class="holdwrap"><button type="button" class="signtog lay-max-sign" data-sign="'+maxSign+'" title="Tap to switch dropped/grew" aria-label="Direction">'+holdSignGlyph(maxSign)+'</button>'+
+            '<input type="text" inputmode="numeric" class="thr lay-max" placeholder="max %" value="'+(lay.max!=null?Math.abs(lay.max):'')+'"></div>';
+      } else {
+        minMaxHtml=
+          '<div class="moneywrap"><span class="cur">'+ui[0]+'</span>'+
+            '<input type="text" inputmode="numeric" class="thr lay-min" placeholder="min" value="'+esc(layerFormat(lay.metric,lay.min))+'"></div>'+
+          '<div class="moneywrap"><span class="cur">'+ui[0]+'</span>'+
+            '<input type="text" inputmode="numeric" class="thr lay-max" placeholder="max" value="'+esc(layerFormat(lay.metric,lay.max))+'"></div>';
       }
       return '<div class="layer" data-idx="'+idx+'">'+
         '<select class="lay-metric">'+opts+'</select>'+
-        wkPicker+
-        '<div class="moneywrap"><span class="cur">'+ui[0]+'</span>'+
-          '<input type="text" inputmode="numeric" class="thr lay-min" placeholder="min" value="'+esc(layerFormat(lay.metric,lay.min))+'"></div>'+
-        '<div class="moneywrap"><span class="cur">'+ui[0]+'</span>'+
-          '<input type="text" inputmode="numeric" class="thr lay-max" placeholder="max" value="'+esc(layerFormat(lay.metric,lay.max))+'"></div>'+
+        minMaxHtml+
         (S.boLayers.length>1?'<button type="button" class="lay-remove" aria-label="Remove metric">&times;</button>':'<span class="lay-spacer"></span>')+
       '</div>';
     }).join('')+(S.boLayers.length<BO_METRICS.length?'<button type="button" class="addlayer" id="bo-add">+ Add another box office metric</button>':'');
@@ -1976,12 +1999,42 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
         if(lay.metric==='hold') lay.wk=0;
         renderBoLayers();render();
       };
-      var wkSel=row.querySelector('.lay-wk');
-      if(wkSel) wkSel.onchange=function(e){lay.wk=+e.target.value;render();};
-      row.querySelector('.lay-min').oninput=function(e){lay.min=layerParse(lay.metric,e.target.value);render();};
-      row.querySelector('.lay-max').oninput=function(e){lay.max=layerParse(lay.metric,e.target.value);render();};
-      row.querySelector('.lay-min').onblur=function(){this.value=layerFormat(lay.metric,lay.min);};
-      row.querySelector('.lay-max').onblur=function(){this.value=layerFormat(lay.metric,lay.max);};
+      if(lay.metric==='hold'){
+        var wkSel=row.querySelector('.lay-wk');
+        if(wkSel) wkSel.onchange=function(e){lay.wk=+e.target.value;render();};
+        var minBtn=row.querySelector('.lay-min-sign'), maxBtn=row.querySelector('.lay-max-sign');
+        minBtn.onclick=function(){
+          var mag=lay.min!=null?Math.abs(lay.min):null;
+          lay.min=(mag==null)?null:(holdSign(lay.min)==='down'?mag:-mag);
+          renderBoLayers();render();
+        };
+        maxBtn.onclick=function(){
+          var mag=lay.max!=null?Math.abs(lay.max):null;
+          lay.max=(mag==null)?null:(holdSign(lay.max)==='down'?mag:-mag);
+          renderBoLayers();render();
+        };
+        row.querySelector('.lay-min').oninput=function(e){
+          // magnitude only -- the field never carries a sign, the toggle button owns that.
+          // parseSignedPct still backs it (decimals allowed, no 0-100 clamp unlike parsePct,
+          // which would silently mangle a genuine reading like -58.4% or a >100% expansion) --
+          // Math.abs() just guards against a stray "-" reaching the field via paste.
+          var mag=parseSignedPct(e.target.value); mag=(mag==null)?null:Math.abs(mag);
+          lay.min=(mag==null)?null:(holdSign(lay.min)==='down'?-mag:mag);
+          render();
+        };
+        row.querySelector('.lay-max').oninput=function(e){
+          var mag=parseSignedPct(e.target.value); mag=(mag==null)?null:Math.abs(mag);
+          lay.max=(mag==null)?null:(holdSign(lay.max)==='down'?-mag:mag);
+          render();
+        };
+        row.querySelector('.lay-min').onblur=function(){this.value=lay.min!=null?Math.abs(lay.min):'';};
+        row.querySelector('.lay-max').onblur=function(){this.value=lay.max!=null?Math.abs(lay.max):'';};
+      } else {
+        row.querySelector('.lay-min').oninput=function(e){lay.min=layerParse(lay.metric,e.target.value);render();};
+        row.querySelector('.lay-max').oninput=function(e){lay.max=layerParse(lay.metric,e.target.value);render();};
+        row.querySelector('.lay-min').onblur=function(){this.value=layerFormat(lay.metric,lay.min);};
+        row.querySelector('.lay-max').onblur=function(){this.value=layerFormat(lay.metric,lay.max);};
+      }
       var rm=row.querySelector('.lay-remove');
       if(rm) rm.onclick=function(){S.boLayers.splice(idx,1);renderBoLayers();render();};
     });
