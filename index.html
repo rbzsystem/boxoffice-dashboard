@@ -2659,22 +2659,22 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     // ---- genre (one chip per genre so each is independently removable) ----
     {key:'genre:Sci-Fi',label:'Primary genre: Sci-Fi',re:/\bsci-?fi\b|\bscience fiction\b/,apply:function(){if(S.primaryGenre.indexOf('Sci-Fi')<0)S.primaryGenre.push('Sci-Fi');}},
     {key:'genre:Action',label:'Primary genre: Action',re:/\baction\b/,apply:function(){if(S.primaryGenre.indexOf('Action')<0)S.primaryGenre.push('Action');}},
-    {key:'genre:Adventure',label:'Primary genre: Adventure',re:/\badventure\b/,apply:function(){if(S.primaryGenre.indexOf('Adventure')<0)S.primaryGenre.push('Adventure');}},
+    {key:'genre:Adventure',label:'Primary genre: Adventure',re:/\badventures?\b/,apply:function(){if(S.primaryGenre.indexOf('Adventure')<0)S.primaryGenre.push('Adventure');}},
     {key:'genre:Animation',label:'Primary genre: Animation',re:/\banimat(ed|ion)\b/,apply:function(){if(S.primaryGenre.indexOf('Animation')<0)S.primaryGenre.push('Animation');}},
-    {key:'genre:Comedy',label:'Primary genre: Comedy',re:/\bcomedy\b|\brom-?com\b/,apply:function(){if(S.primaryGenre.indexOf('Comedy')<0)S.primaryGenre.push('Comedy');}},
-    {key:'genre:Documentary',label:'Primary genre: Documentary',re:/\bdocumentary\b/,apply:function(){if(S.primaryGenre.indexOf('Documentary')<0)S.primaryGenre.push('Documentary');}},
-    {key:'genre:Drama',label:'Primary genre: Drama',re:/\bdrama\b/,apply:function(){if(S.primaryGenre.indexOf('Drama')<0)S.primaryGenre.push('Drama');}},
+    {key:'genre:Comedy',label:'Primary genre: Comedy',re:/\bcomed(y|ies)\b|\brom-?coms?\b/,apply:function(){if(S.primaryGenre.indexOf('Comedy')<0)S.primaryGenre.push('Comedy');}},
+    {key:'genre:Documentary',label:'Primary genre: Documentary',re:/\bdocumentar(y|ies)\b/,apply:function(){if(S.primaryGenre.indexOf('Documentary')<0)S.primaryGenre.push('Documentary');}},
+    {key:'genre:Drama',label:'Primary genre: Drama',re:/\bdramas?\b/,apply:function(){if(S.primaryGenre.indexOf('Drama')<0)S.primaryGenre.push('Drama');}},
     {key:'genre:Family',label:'Primary genre: Family',re:/\bfamily(-| )?(friendly|film|movie)?\b/,apply:function(){if(S.primaryGenre.indexOf('Family')<0)S.primaryGenre.push('Family');}},
-    {key:'genre:Fantasy',label:'Primary genre: Fantasy',re:/\bfantasy\b/,apply:function(){if(S.primaryGenre.indexOf('Fantasy')<0)S.primaryGenre.push('Fantasy');}},
-    {key:'genre:Horror',label:'Primary genre: Horror',re:/\bhorror\b/,apply:function(){if(S.primaryGenre.indexOf('Horror')<0)S.primaryGenre.push('Horror');}},
-    {key:'genre:Musical',label:'Primary genre: Musical',re:/\bmusical\b/,apply:function(){if(S.primaryGenre.indexOf('Musical')<0)S.primaryGenre.push('Musical');}},
-    {key:'genre:Romance',label:'Primary genre: Romance',re:/\bromance\b|\bromantic\b/,apply:function(){if(S.primaryGenre.indexOf('Romance')<0)S.primaryGenre.push('Romance');}},
-    {key:'genre:Thriller',label:'Primary genre: Thriller',re:/\bthriller\b/,apply:function(){if(S.primaryGenre.indexOf('Thriller')<0)S.primaryGenre.push('Thriller');}},
+    {key:'genre:Fantasy',label:'Primary genre: Fantasy',re:/\bfantas(y|ies)\b/,apply:function(){if(S.primaryGenre.indexOf('Fantasy')<0)S.primaryGenre.push('Fantasy');}},
+    {key:'genre:Horror',label:'Primary genre: Horror',re:/\bhorrors?\b/,apply:function(){if(S.primaryGenre.indexOf('Horror')<0)S.primaryGenre.push('Horror');}},
+    {key:'genre:Musical',label:'Primary genre: Musical',re:/\bmusicals?\b/,apply:function(){if(S.primaryGenre.indexOf('Musical')<0)S.primaryGenre.push('Musical');}},
+    {key:'genre:Romance',label:'Primary genre: Romance',re:/\bromances?\b|\bromantic\b/,apply:function(){if(S.primaryGenre.indexOf('Romance')<0)S.primaryGenre.push('Romance');}},
+    {key:'genre:Thriller',label:'Primary genre: Thriller',re:/\bthrillers?\b/,apply:function(){if(S.primaryGenre.indexOf('Thriller')<0)S.primaryGenre.push('Thriller');}},
     // ---- source IP category ----
-    {key:'ipcat',label:'Franchise',re:/\bfranchise\b|\bsequel\b|\bpart of a series\b/,apply:function(){S.sourceIpCategory=['franchise'];}},
-    {key:'ipcat',label:'Original (non-franchise)',re:/\boriginal\b|\bnon-?franchise\b|\bstandalone\b/,apply:function(){S.sourceIpCategory=['original'];}},
-    {key:'ipcat',label:'Adaptation',re:/\badaptation\b|\bbased on the (novel|book)\b|\bbased on a (novel|book)\b|\bliterary adaptation\b/,apply:function(){S.sourceIpCategory=['adaptation'];}},
-    {key:'ipcat',label:'Branded IP (game/toy)',re:/\bvideo ?game\b|\btoy\b|\bbranded ip\b/,apply:function(){S.sourceIpCategory=['branded_ip'];}},
+    {key:'ipcat',label:'Franchise',re:/\bfranchises?\b|\bsequels?\b|\bpart of a series\b/,apply:function(){S.sourceIpCategory=['franchise'];}},
+    {key:'ipcat',label:'Original (non-franchise)',re:/\boriginals?\b|\bnon-?franchise\b|\bstandalone\b/,apply:function(){S.sourceIpCategory=['original'];}},
+    {key:'ipcat',label:'Adaptation',re:/\badaptations?\b|\bbased on the (novel|book)\b|\bbased on a (novel|book)\b|\bliterary adaptation\b/,apply:function(){S.sourceIpCategory=['adaptation'];}},
+    {key:'ipcat',label:'Branded IP (game/toy)',re:/\bvideo ?games?\b|\btoys?\b|\bbranded ip\b/,apply:function(){S.sourceIpCategory=['branded_ip'];}},
     // ---- MPAA ----
     {key:'mpa',label:'Rated R',re:/\br-?rated\b|\brated r\b/,apply:function(){S.mpa=['R'];}},
     {key:'mpa',label:'Rated PG-13',re:/\bpg-?13\b/,apply:function(){S.mpa=['PG-13'];}},
@@ -2683,9 +2683,9 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     {key:'budget',re:/\$?(\d+(?:\.\d+)?)\s*(?:m|million)\+?\s*budget|budget[^0-9$]{0,20}\$?(\d+(?:\.\d+)?)\s*(?:m|million)\b/,
       apply:function(m){var n=parseFloat(m[1]||m[2])*1e6;S.budmin=n*0.7;S.budmax=n*1.4;},
       labelFn:function(m){return 'Budget ~$'+Math.round(parseFloat(m[1]||m[2]))+'M';}},
-    {key:'budget',label:'Big-budget / tentpole',re:/\bbig[- ]budget\b|\btentpole\b|\bblockbuster budget\b|\bmega[- ]budget\b/,apply:function(){S.budmin=100e6;S.budmax=0;}},
-    {key:'budget',label:'Mid-budget',re:/\bmid[- ]budget\b|\bmiddle[- ]budget\b/,apply:function(){S.budmin=20e6;S.budmax=80e6;}},
-    {key:'budget',label:'Low-budget / indie',re:/\blow[- ]budget\b|\bindie budget\b|\bmicro[- ]budget\b|\bshoestring\b/,apply:function(){S.budmin=0;S.budmax=20e6;}},
+    {key:'budget',label:'Big-budget / tentpole',re:/\bbig[- ]budgets?\b|\btentpoles?\b|\bblockbuster budgets?\b|\bmega[- ]budgets?\b/,apply:function(){S.budmin=100e6;S.budmax=0;}},
+    {key:'budget',label:'Mid-budget',re:/\bmid[- ]budgets?\b|\bmiddle[- ]budgets?\b/,apply:function(){S.budmin=20e6;S.budmax=80e6;}},
+    {key:'budget',label:'Low-budget / indie',re:/\blow[- ]budgets?\b|\bindie budgets?\b|\bmicro[- ]budgets?\b|\bshoestring\b/,apply:function(){S.budmin=0;S.budmax=20e6;}},
     // ---- commercial outcome (return multiple = WW / budget -- what happened, not what it cost) ----
     {key:'ret',label:'Box office bomb / flop',re:/\bbomb(ed)?\b|\bflop(ped)?\b|\bbox office disaster\b|\bunderperformed\b/,apply:function(){setBoLayer('ret',null,1.5);}},
     {key:'ret',label:'Huge hit / blockbuster success',re:/\bhuge hit\b|\bmassive (success|hit)\b|\bblockbuster (hit|success)\b|\bsmash hit\b/,apply:function(){setBoLayer('ret',3,null);}},
@@ -2738,8 +2738,47 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     if(!S.boLayers.length) S.boLayers.push({metric:'dom',min:0,max:0});
   }
   var smartChipsApplied=[];   // [{key,label}] -- reapplySmartChips() rebuilds state from this list
+  // Typo tolerance (2026-08-14, user report): "Star driven dramas" silently dropped the
+  // Drama chip because the rules matched exact words only. Two layers fix that: the rules
+  // above now carry plural/inflected forms (dramas, comedies, thrillers...), and this
+  // normalizer repairs one-letter typos ("buget", "dramma", "thriler") by snapping each
+  // unrecognized token to the UNIQUE rule keyword within edit distance 1 -- rule-based,
+  // deterministic, no model. Guards: tokens under 5 chars, tokens with digits/$/hyphens,
+  // exact keyword matches, ambiguous corrections (2+ candidates), and a stoplist of real
+  // English words that sit one edit from a keyword ("start" is not a typo of "star") are
+  // all left untouched -- a missed correction costs one chip; a wrong one fabricates a
+  // filter the user never asked for, so every guard errs toward not correcting.
+  var SMART_LEX=['drama','comedy','thriller','horror','action','adventure','animation','animated','fantasy','romance','romantic','musical','documentary','franchise','sequel','original','standalone','adaptation','budget','tentpole','blockbuster','shoestring','star','stars','driven','vehicle','power','million','indie','arthouse'];
+  var SMART_STOP={'start':1,'starts':1,'stat':1,'stats':1,'auction':1,'faction':1,'fraction':1,'section':1,'nation':1,'ration':1,'action':1};
+  function within1(a,b){
+    if(a===b) return true;
+    var la=a.length, lb=b.length;
+    if(Math.abs(la-lb)>1) return false;
+    var i=0, j=0, edits=0;
+    while(i<la&&j<lb){
+      if(a.charAt(i)===b.charAt(j)){i++;j++;continue;}
+      if(++edits>1) return false;
+      if(la>lb) i++; else if(lb>la) j++; else {i++;j++;}
+    }
+    return edits+(la-i)+(lb-j)<=1;
+  }
+  function normalizeSmartQuery(t){
+    return t.split(/(\s+)/).map(function(tok){
+      var w=tok.toLowerCase();
+      if(w.length<5 || SMART_STOP[w] || /[\d$\-]/.test(w)) return tok;
+      if(SMART_LEX.indexOf(w)>=0) return tok;
+      var cand=null;
+      for(var i=0;i<SMART_LEX.length;i++){
+        if(within1(w,SMART_LEX[i]) || within1(w,SMART_LEX[i]+'s')){
+          if(cand!==null && cand!==SMART_LEX[i]) return tok;  // ambiguous -- leave alone
+          cand=SMART_LEX[i];
+        }
+      }
+      return cand!==null?cand:tok;
+    }).join('');
+  }
   function parseSmartQuery(text){
-    var t=text.toLowerCase();
+    var t=normalizeSmartQuery(text.toLowerCase());
     var hits=[];
     SMART_RULES.forEach(function(rule){
       var m=t.match(rule.re);
