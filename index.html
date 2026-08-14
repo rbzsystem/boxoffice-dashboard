@@ -1877,7 +1877,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   // Advanced (second-tier) filters live in the same S object: bud*/rc*/ra* min-max ranges
   // (0 = unset) and mpa[] (empty = all ratings). A record missing a filtered field is
   // excluded while that advanced filter is active (coverage disclosed in the footer).
-  var S={q:"",studios:[],labels:[],years:[],dfrom:"",dto:"",genres:[],primaryGenre:[],commercialDriver:[],gmode:"any",subgenres:[],smode:"any",tiers:[],size:"",opmin:0,opmax:0,thmin:0,thmax:0,sourceIpCategory:[],sourceIpDetail:[],statuses:[],rerelease:false,boxtype:"ww",boLayers:[{metric:"dom",min:0,max:0}],peopleLayers:[{role:"director",name:""}],pmode:"any",awardLayers:[{aw:"",cat:"",res:"w"}],comps:false,localLang:false,events:false,budmin:0,budmax:0,rcmin:0,rcmax:0,ramin:0,ramax:0,mpa:[],excl:[],pins:[],comp:"",view:""};
+  var S={q:"",studios:[],labels:[],years:[],dfrom:"",dto:"",genres:[],primaryGenre:[],commercialDriver:[],gmode:"any",subgenres:[],smode:"any",tiers:[],size:"",opmin:0,opmax:0,thmin:0,thmax:0,sourceIpCategory:[],sourceIpDetail:[],comicBook:false,statuses:[],rerelease:false,boxtype:"ww",boLayers:[{metric:"dom",min:0,max:0}],peopleLayers:[{role:"director",name:""}],pmode:"any",awardLayers:[{aw:"",cat:"",res:"w"}],comps:false,localLang:false,events:false,budmin:0,budmax:0,rcmin:0,rcmax:0,ramin:0,ramax:0,mpa:[],excl:[],pins:[],comp:"",view:""};
   var SG_LABELS={"anime": "Anime", "biopic": "Biopic", "buddy": "Buddy", "coming_of_age": "Coming of Age", "concert_film": "Concert Film", "contained": "Contained", "creature_feature": "Creature Feature", "crime": "Crime", "dark_comedy": "Dark Comedy", "disaster": "Disaster", "dystopian": "Dystopian", "fairy_tale_folklore": "Fairy Tale / Folklore", "faith": "Faith", "foreign_language": "Foreign Language", "found_footage": "Found Footage", "heist": "Heist", "holiday": "Holiday", "martial_arts": "Martial Arts", "military_war": "Military / War", "mockumentary": "Mockumentary", "murder_mystery": "Murder Mystery", "noir": "Noir", "opera_stage_capture": "Opera / Stage Capture", "parody_spoof": "Parody / Spoof", "historical_period": "Period / Historical", "political": "Political", "post_apocalyptic": "Post-Apocalyptic", "psychological": "Psychological", "road_movie": "Road Movie", "satire": "Satire", "slasher": "Slasher", "space": "Space", "sports": "Sports", "espionage_spy": "Spy / Espionage", "star_led": "Star-Led", "superhero": "Superhero", "supernatural": "Supernatural", "survival": "Survival", "time_travel": "Time Travel", "true_crime": "True Crime", "vampire": "Vampire", "western": "Western", "young_adult": "Young Adult", "zombie": "Zombie"};
 
   // Count of active ADVANCED filters (per-filter: a min/max range counts once, not twice).
@@ -1894,6 +1894,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     if(S.mpa.length)c++;
     if(S.sourceIpCategory.length)c++;
     if(S.sourceIpDetail.length)c++;
+    if(S.comicBook)c++;
     if(S.size)c++;
     if(S.opmin>0||S.opmax>0)c++; if(S.thmin>0||S.thmax>0)c++;
     return c;
@@ -2327,6 +2328,15 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     if(S.thmax>0 && (r.th==null || r.th>S.thmax)) return false;
     if(S.sourceIpCategory.length && S.sourceIpCategory.indexOf(r.cat)<0) return false;
     if(S.sourceIpDetail.length && S.sourceIpDetail.indexOf(r.sid)<0) return false;
+    // Comic-book gate (smart search only -- 2026-08-14, user report): "comic book" has no
+    // single home in the data. source_ip_detail='comic_book' is only ~31 films because the
+    // detail field is single-valued and franchise classification wins it -- Aquaman is
+    // shared_universe, Deadpool 2 is sequel; only first-in-series adaptations keep the
+    // comic_book label. The superhero subgenre tag (124 films) carries the bulk of what a
+    // user means by the phrase. So this is an OR across both signals -- the one axis-crossing
+    // gate in the filter set, which is why it's its own boolean instead of piggybacking on
+    // S.subgenres/S.sourceIpDetail (those AND against each other by design).
+    if(S.comicBook && !((r.sg&&r.sg.indexOf('superhero')>=0) || ['comic_book','graphic_novel','manga'].indexOf(r.sid)>=0)) return false;
     if(S.statuses.length && S.statuses.indexOf(r.s)<0) return false;
     // Box office: every active metric layer must match (AND) — e.g. Domestic Total
     // $100M-$300M AND Domestic Opening Weekend $30M+ requires both simultaneously.
@@ -2678,6 +2688,9 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     {key:'ipcat',label:'Original (non-franchise)',re:/\boriginals?\b|\bnon-?franchise\b|\bstandalone\b/,apply:function(){S.sourceIpCategory=['original'];}},
     {key:'ipcat',label:'Adaptation',re:/\badaptations?\b|\bbased on the (novel|book)\b|\bbased on a (novel|book)\b|\bliterary adaptation\b/,apply:function(){S.sourceIpCategory=['adaptation'];}},
     {key:'ipcat',label:'Branded IP (game/toy)',re:/\bvideo ?games?\b|\btoys?\b|\bbranded ip\b/,apply:function(){S.sourceIpCategory=['branded_ip'];}},
+    // "comic" alone is deliberately NOT a trigger -- it reads as comedic ("comic caper")
+    // as often as comic-book. Requires the compound or an unambiguous synonym.
+    {key:'comic',label:'Comic book / superhero',re:/\bcomic[- ]?books?\b|\bcomics\b|\bsuper[- ]?hero(es)?\b|\bgraphic novels?\b|\bmanga\b/,apply:function(){S.comicBook=true;}},
     // ---- MPAA ----
     {key:'mpa',label:'Rated R',re:/\br-?rated\b|\brated r\b/,apply:function(){S.mpa=['R'];}},
     {key:'mpa',label:'Rated PG-13',re:/\bpg-?13\b/,apply:function(){S.mpa=['PG-13'];}},
@@ -2751,8 +2764,8 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   // English words that sit one edit from a keyword ("start" is not a typo of "star") are
   // all left untouched -- a missed correction costs one chip; a wrong one fabricates a
   // filter the user never asked for, so every guard errs toward not correcting.
-  var SMART_LEX=['drama','comedy','thriller','horror','action','adventure','animation','animated','fantasy','romance','romantic','musical','documentary','franchise','sequel','original','standalone','adaptation','budget','tentpole','blockbuster','shoestring','star','stars','driven','vehicle','power','million','indie','arthouse'];
-  var SMART_STOP={'start':1,'starts':1,'stat':1,'stats':1,'auction':1,'faction':1,'fraction':1,'section':1,'nation':1,'ration':1,'action':1};
+  var SMART_LEX=['drama','comedy','thriller','horror','action','adventure','animation','animated','fantasy','romance','romantic','musical','documentary','franchise','sequel','original','standalone','adaptation','budget','tentpole','blockbuster','shoestring','star','stars','driven','vehicle','power','million','indie','arthouse','comic','comics','superhero','graphic','manga'];
+  var SMART_STOP={'start':1,'starts':1,'stat':1,'stats':1,'auction':1,'faction':1,'fraction':1,'section':1,'nation':1,'ration':1,'action':1,'cosmic':1};
   // Damerau-Levenshtein (adjacent transposition counts as ONE edit -- "budgte" is one swap
   // from "budget", not two substitutions), bounded at `max` with early row-exit. 2026-08-14
   // upgrade of the original plain-distance-1 check: transpositions are the most common typing
@@ -2832,7 +2845,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     // other field here) -- it's a deliberately separate, stricter gate (r.gn[0] only) that
     // the manual ANY/ALL Genre filter doesn't have a checkbox for. The chip is its own
     // transparency; see the primaryGenre pass() gate comment for why the split exists.
-    S.primaryGenre=[]; S.commercialDriver=[]; S.sourceIpCategory=[]; S.mpa=[]; S.budmin=0; S.budmax=0;
+    S.primaryGenre=[]; S.commercialDriver=[]; S.sourceIpCategory=[]; S.comicBook=false; S.mpa=[]; S.budmin=0; S.budmax=0;
     S.rcmin=0; S.rcmax=0; S.dfrom=''; S.dto='';
     ['ret','legs','hold','share','star'].forEach(clearBoLayer);
     smartChipsApplied.forEach(function(c){c.apply();});
@@ -3304,7 +3317,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   // earlier "view survives Reset" call). resetState() clears without rendering so presets
   // (the NOW IN RELEASE live board) can layer on top and render once.
   function resetState(){
-    S={q:"",studios:[],labels:[],years:[],dfrom:"",dto:"",genres:[],primaryGenre:[],commercialDriver:[],gmode:"any",subgenres:[],smode:"any",tiers:[],size:"",opmin:0,opmax:0,thmin:0,thmax:0,sourceIpCategory:[],sourceIpDetail:[],statuses:[],rerelease:false,boxtype:"ww",boLayers:[{metric:"dom",min:0,max:0}],peopleLayers:[{role:"director",name:""}],pmode:"any",awardLayers:[{aw:"",cat:"",res:"w"}],comps:false,localLang:false,events:false,budmin:0,budmax:0,rcmin:0,rcmax:0,ramin:0,ramax:0,mpa:[],excl:[],pins:[],comp:"",view:""};
+    S={q:"",studios:[],labels:[],years:[],dfrom:"",dto:"",genres:[],primaryGenre:[],commercialDriver:[],gmode:"any",subgenres:[],smode:"any",tiers:[],size:"",opmin:0,opmax:0,thmin:0,thmax:0,sourceIpCategory:[],sourceIpDetail:[],comicBook:false,statuses:[],rerelease:false,boxtype:"ww",boLayers:[{metric:"dom",min:0,max:0}],peopleLayers:[{role:"director",name:""}],pmode:"any",awardLayers:[{aw:"",cat:"",res:"w"}],comps:false,localLang:false,events:false,budmin:0,budmax:0,rcmin:0,rcmax:0,ramin:0,ramax:0,mpa:[],excl:[],pins:[],comp:"",view:""};
     syncVtoggle();
     document.getElementById('f-q').value='';
     document.getElementById('f-pin').value='';
