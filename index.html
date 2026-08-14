@@ -36,6 +36,8 @@ input.thr{min-width:120px}
 .schip button{background:none;border:none;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;opacity:.7}
 .schip button:hover{opacity:1}
 .smartnomatch{font-size:12px;color:var(--dim);margin-top:9px}
+.smartmiss{font-size:12px;color:var(--dim);margin-top:7px;font-style:italic}
+.smartmiss:empty{display:none}
 select{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;outline:none;min-width:140px;max-width:220px}
 select:focus{border-color:var(--accent)}
 .reset{background:none;border:1px solid var(--line);color:var(--dim);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12px;align-self:flex-end}
@@ -405,6 +407,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
       <button type="button" id="f-smart-apply">Apply</button>
     </div>
     <div class="smartchips" id="smartchips"></div>
+    <div class="smartmiss" id="smartmiss"></div>
   </div>
   </div>
   <div class="ctlrow">
@@ -2750,26 +2753,43 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   // filter the user never asked for, so every guard errs toward not correcting.
   var SMART_LEX=['drama','comedy','thriller','horror','action','adventure','animation','animated','fantasy','romance','romantic','musical','documentary','franchise','sequel','original','standalone','adaptation','budget','tentpole','blockbuster','shoestring','star','stars','driven','vehicle','power','million','indie','arthouse'];
   var SMART_STOP={'start':1,'starts':1,'stat':1,'stats':1,'auction':1,'faction':1,'fraction':1,'section':1,'nation':1,'ration':1,'action':1};
-  function within1(a,b){
-    if(a===b) return true;
+  // Damerau-Levenshtein (adjacent transposition counts as ONE edit -- "budgte" is one swap
+  // from "budget", not two substitutions), bounded at `max` with early row-exit. 2026-08-14
+  // upgrade of the original plain-distance-1 check: transpositions are the most common typing
+  // error after substitutions, and long words earn a second edit (see normalizeSmartQuery).
+  function editDist(a,b,max){
     var la=a.length, lb=b.length;
-    if(Math.abs(la-lb)>1) return false;
-    var i=0, j=0, edits=0;
-    while(i<la&&j<lb){
-      if(a.charAt(i)===b.charAt(j)){i++;j++;continue;}
-      if(++edits>1) return false;
-      if(la>lb) i++; else if(lb>la) j++; else {i++;j++;}
+    if(Math.abs(la-lb)>max) return max+1;
+    var prev2=null, prev=[], cur, i, j;
+    for(j=0;j<=lb;j++) prev[j]=j;
+    for(i=1;i<=la;i++){
+      cur=[i];
+      var rowMin=i;
+      for(j=1;j<=lb;j++){
+        var cost=a.charAt(i-1)===b.charAt(j-1)?0:1;
+        var v=Math.min(prev[j]+1, cur[j-1]+1, prev[j-1]+cost);
+        if(i>1&&j>1&&a.charAt(i-1)===b.charAt(j-2)&&a.charAt(i-2)===b.charAt(j-1))
+          v=Math.min(v, prev2[j-2]+cost);
+        cur[j]=v;
+        if(v<rowMin) rowMin=v;
+      }
+      if(rowMin>max) return max+1;
+      prev2=prev; prev=cur;
     }
-    return edits+(la-i)+(lb-j)<=1;
+    return prev[lb];
   }
   function normalizeSmartQuery(t){
     return t.split(/(\s+)/).map(function(tok){
       var w=tok.toLowerCase();
       if(w.length<5 || SMART_STOP[w] || /[\d$\-]/.test(w)) return tok;
       if(SMART_LEX.indexOf(w)>=0) return tok;
+      // Length-scaled tolerance: short words get 1 edit; words of 8+ chars get 2
+      // ("documentry", "adaptaton"). Safe against a ~30-word lexicon because long words
+      // are sparse -- and the unique-candidate guard below still rejects any collision.
+      var max=w.length>=8?2:1;
       var cand=null;
       for(var i=0;i<SMART_LEX.length;i++){
-        if(within1(w,SMART_LEX[i]) || within1(w,SMART_LEX[i]+'s')){
+        if(editDist(w,SMART_LEX[i],max)<=max || editDist(w,SMART_LEX[i]+'s',max)<=max){
           if(cand!==null && cand!==SMART_LEX[i]) return tok;  // ambiguous -- leave alone
           cand=SMART_LEX[i];
         }
@@ -2777,15 +2797,31 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
       return cand!==null?cand:tok;
     }).join('');
   }
+  // Filler words never worth surfacing as "not understood" -- connective tissue every query
+  // carries. Deliberately does NOT include filter-meaningful words (under/over/between/
+  // before/after/recent/released): if those went unmatched, the user should see it.
+  var SMART_FILLER={'a':1,'an':1,'the':1,'and':1,'or':1,'of':1,'in':1,'on':1,'at':1,'to':1,'for':1,'with':1,'that':1,'this':1,'these':1,'those':1,'is':1,'are':1,'was':1,'were':1,'be':1,'been':1,'being':1,'it':1,'its':1,'as':1,'by':1,'from':1,'than':1,'then':1,'so':1,'but':1,'not':1,'also':1,'film':1,'films':1,'movie':1,'movies':1,'picture':1,'pictures':1,'title':1,'titles':1,'show':1,'me':1,'all':1,'any':1,'some':1,'which':1,'what':1,'i':1,'we':1,'want':1,'looking':1,'find':1,'give':1,'get':1,'see':1,'like':1,'really':1,'very':1,'more':1,'have':1,'has':1,'had':1,'do':1,'does':1};
+  var smartLeftover='';
   function parseSmartQuery(text){
     var t=normalizeSmartQuery(text.toLowerCase());
-    var hits=[];
+    var hits=[], spans=[];
     SMART_RULES.forEach(function(rule){
       var m=t.match(rule.re);
       if(!m) return;
+      spans.push([m.index, m.index+m[0].length]);
       var label=rule.labelFn?rule.labelFn(m):(typeof rule.label==='function'?rule.label(m):rule.label);
       hits.push({key:rule.key,label:label,apply:function(){rule.apply(m);}});
     });
+    // Leftover = whatever the rules didn't consume, minus filler -- surfaced under the chips
+    // so a missed word ("budgte" beyond typo range, a phrasing no rule covers) fails VISIBLY
+    // instead of silently (2026-08-14, user standard: the box should say what it didn't get).
+    var masked=t.split('');
+    spans.forEach(function(s){for(var k=s[0];k<s[1];k++) masked[k]=' ';});
+    smartLeftover=masked.join('').split(/\s+/).map(function(w){
+      return w.replace(/^[^\w$]+|[^\w$]+$/g,'');
+    }).filter(function(w){
+      return w && !(w.length<=2 && /^[a-z]+$/.test(w)) && !SMART_FILLER[w];
+    }).join(' ');
     return hits;
   }
   function reapplySmartChips(){
@@ -2840,6 +2876,10 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     if(!smartChipsApplied.length&&input.value.trim()){
       nomatch.innerHTML='<span class="smartnomatch">Didn\'t recognize any filters in that -- try mentioning genre, budget, franchise vs. original, legs/hold, international skew, or reception.</span>';
     }
+    // Partial-parse transparency: name the words no rule consumed. Only when some chips DID
+    // land (the zero-chip case already gets the fuller message above).
+    document.getElementById('smartmiss').textContent=
+      (smartChipsApplied.length&&smartLeftover)?('Didn\'t understand: “'+smartLeftover+'”'):'';
   }
   document.getElementById('f-smart-apply').onclick=applySmartQuery;
   document.getElementById('f-smart').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();applySmartQuery();}};
@@ -3313,6 +3353,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     smartChipsApplied=[];
     document.getElementById('f-smart').value='';
     document.getElementById('smartchips').innerHTML='';
+    document.getElementById('smartmiss').textContent='';
   }
   function resetAll(){
     resetState(); render(); window.scrollTo(0,0);
