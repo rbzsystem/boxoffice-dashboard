@@ -22,6 +22,20 @@ input[type=search]:focus,input.thr:focus{border-color:var(--accent)}
 .datewrap input[type=date]:focus{border-color:var(--accent)}
 .datewrap .dsep{color:var(--dim);font-weight:600}
 input.thr{min-width:120px}
+/* Smart search (2026-08-13): rule-based text-to-filters box -- see parseSmartQuery(). Always
+   full-width so it reads as the primary entry point, not one control among many. */
+.smartctl{flex:1 1 100%}
+.smartwrap{display:flex;gap:8px}
+.smartwrap input{flex:1;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font:inherit;font-size:13px;outline:none;min-width:0}
+.smartwrap input:focus{border-color:var(--accent)}
+#f-smart-apply{flex:0 0 auto;background:var(--accent);color:#04122b;border:none;border-radius:8px;padding:0 18px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+#f-smart-apply:hover{filter:brightness(1.08)}
+.smartchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.smartchips:empty{margin-top:0}
+.schip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:#5DE08A;background:rgba(93,224,138,.1);border:1px solid rgba(93,224,138,.3);border-radius:20px;padding:5px 5px 5px 12px}
+.schip button{background:none;border:none;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;opacity:.7}
+.schip button:hover{opacity:1}
+.smartnomatch{font-size:12px;color:var(--dim);margin-top:9px}
 select{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;outline:none;min-width:140px;max-width:220px}
 select:focus{border-color:var(--accent)}
 .reset{background:none;border:1px solid var(--line);color:var(--dim);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12px;align-self:flex-end}
@@ -383,6 +397,16 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   Filters <span class="ftcount" id="ftcount"></span><span class="ftcaret">&#9662;</span>
 </button>
 <nav class="controls" id="controls">
+  <div class="ctlrow">
+  <div class="ctl smartctl" title="Rule-based, not a live model -- it maps words in what you type to the filters below (genre, budget, legs, hold, international skew, reception, franchise vs. original, era). Chips show exactly what it understood; nothing is silently guessed.">
+    <label>Describe what you're looking for</label>
+    <div class="smartwrap">
+      <input type="text" id="f-smart" placeholder="e.g. big fantasy franchise movies with strong legs and international skew" autocomplete="off">
+      <button type="button" id="f-smart-apply">Apply</button>
+    </div>
+    <div class="smartchips" id="smartchips"></div>
+  </div>
+  </div>
   <div class="ctlrow">
   <div class="ctl"><label>Search title</label>
     <input type="search" id="f-q" placeholder="Type a title&hellip;" autocomplete="off"></div>
@@ -2577,6 +2601,151 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     else if(ux){var j=S.excl.indexOf(ux);if(j>=0)S.excl.splice(j,1);render();}
   });
 
+  // ---- Smart search (2026-08-13) -----------------------------------------------------------
+  // Rule-based text-to-filters, NOT a live model call: this board is a static file with no
+  // backend, and a public page can never safely hold an API key. Every rule below maps a
+  // phrase to the SAME Advanced/primary filters a person would click by hand -- genre,
+  // budget, franchise vs. original, MPAA, legs, hold, international skew, return multiple,
+  // critical reception, release era. Each match becomes a removable chip so what got
+  // understood is never silent; text that matches nothing says so instead of guessing.
+  var SMART_RULES=[
+    // ---- genre (one chip per genre so each is independently removable) ----
+    {key:'genre:Sci-Fi',label:'Genre: Sci-Fi',re:/\bsci-?fi\b|\bscience fiction\b/,apply:function(){if(S.genres.indexOf('Sci-Fi')<0)S.genres.push('Sci-Fi');}},
+    {key:'genre:Action',label:'Genre: Action',re:/\baction\b/,apply:function(){if(S.genres.indexOf('Action')<0)S.genres.push('Action');}},
+    {key:'genre:Adventure',label:'Genre: Adventure',re:/\badventure\b/,apply:function(){if(S.genres.indexOf('Adventure')<0)S.genres.push('Adventure');}},
+    {key:'genre:Animation',label:'Genre: Animation',re:/\banimat(ed|ion)\b/,apply:function(){if(S.genres.indexOf('Animation')<0)S.genres.push('Animation');}},
+    {key:'genre:Comedy',label:'Genre: Comedy',re:/\bcomedy\b|\brom-?com\b/,apply:function(){if(S.genres.indexOf('Comedy')<0)S.genres.push('Comedy');}},
+    {key:'genre:Documentary',label:'Genre: Documentary',re:/\bdocumentary\b/,apply:function(){if(S.genres.indexOf('Documentary')<0)S.genres.push('Documentary');}},
+    {key:'genre:Drama',label:'Genre: Drama',re:/\bdrama\b/,apply:function(){if(S.genres.indexOf('Drama')<0)S.genres.push('Drama');}},
+    {key:'genre:Family',label:'Genre: Family',re:/\bfamily(-| )?(friendly|film|movie)?\b/,apply:function(){if(S.genres.indexOf('Family')<0)S.genres.push('Family');}},
+    {key:'genre:Fantasy',label:'Genre: Fantasy',re:/\bfantasy\b/,apply:function(){if(S.genres.indexOf('Fantasy')<0)S.genres.push('Fantasy');}},
+    {key:'genre:Horror',label:'Genre: Horror',re:/\bhorror\b/,apply:function(){if(S.genres.indexOf('Horror')<0)S.genres.push('Horror');}},
+    {key:'genre:Musical',label:'Genre: Musical',re:/\bmusical\b/,apply:function(){if(S.genres.indexOf('Musical')<0)S.genres.push('Musical');}},
+    {key:'genre:Romance',label:'Genre: Romance',re:/\bromance\b|\bromantic\b/,apply:function(){if(S.genres.indexOf('Romance')<0)S.genres.push('Romance');}},
+    {key:'genre:Thriller',label:'Genre: Thriller',re:/\bthriller\b/,apply:function(){if(S.genres.indexOf('Thriller')<0)S.genres.push('Thriller');}},
+    // ---- source IP category ----
+    {key:'ipcat',label:'Franchise',re:/\bfranchise\b|\bsequel\b|\bpart of a series\b/,apply:function(){S.sourceIpCategory=['franchise'];}},
+    {key:'ipcat',label:'Original (non-franchise)',re:/\boriginal\b|\bnon-?franchise\b|\bstandalone\b/,apply:function(){S.sourceIpCategory=['original'];}},
+    {key:'ipcat',label:'Adaptation',re:/\badaptation\b|\bbased on the (novel|book)\b|\bbased on a (novel|book)\b|\bliterary adaptation\b/,apply:function(){S.sourceIpCategory=['adaptation'];}},
+    {key:'ipcat',label:'Branded IP (game/toy)',re:/\bvideo ?game\b|\btoy\b|\bbranded ip\b/,apply:function(){S.sourceIpCategory=['branded_ip'];}},
+    // ---- MPAA ----
+    {key:'mpa',label:'Rated R',re:/\br-?rated\b|\brated r\b/,apply:function(){S.mpa=['R'];}},
+    {key:'mpa',label:'Rated PG-13',re:/\bpg-?13\b/,apply:function(){S.mpa=['PG-13'];}},
+    {key:'mpa',label:'Family-friendly (G/PG)',re:/\bfamily[- ]friendly\b|\bkid[- ]friendly\b|\brated g\b|\ball[- ]ages\b/,apply:function(){S.mpa=['G','PG'];}},
+    // ---- budget (what KIND of film -- production cost, not what it made) ----
+    {key:'budget',re:/\$?(\d+(?:\.\d+)?)\s*(?:m|million)\+?\s*budget|budget[^0-9$]{0,20}\$?(\d+(?:\.\d+)?)\s*(?:m|million)\b/,
+      apply:function(m){var n=parseFloat(m[1]||m[2])*1e6;S.budmin=n*0.7;S.budmax=n*1.4;},
+      labelFn:function(m){return 'Budget ~$'+Math.round(parseFloat(m[1]||m[2]))+'M';}},
+    {key:'budget',label:'Big-budget / tentpole',re:/\bbig[- ]budget\b|\btentpole\b|\bblockbuster budget\b|\bmega[- ]budget\b/,apply:function(){S.budmin=100e6;S.budmax=0;}},
+    {key:'budget',label:'Mid-budget',re:/\bmid[- ]budget\b|\bmiddle[- ]budget\b/,apply:function(){S.budmin=20e6;S.budmax=80e6;}},
+    {key:'budget',label:'Low-budget / indie',re:/\blow[- ]budget\b|\bindie budget\b|\bmicro[- ]budget\b|\bshoestring\b/,apply:function(){S.budmin=0;S.budmax=20e6;}},
+    // ---- commercial outcome (return multiple = WW / budget -- what happened, not what it cost) ----
+    {key:'ret',label:'Box office bomb / flop',re:/\bbomb(ed)?\b|\bflop(ped)?\b|\bbox office disaster\b|\bunderperformed\b/,apply:function(){setBoLayer('ret',null,1.5);}},
+    {key:'ret',label:'Huge hit / blockbuster success',re:/\bhuge hit\b|\bmassive (success|hit)\b|\bblockbuster (hit|success)\b|\bsmash hit\b/,apply:function(){setBoLayer('ret',3,null);}},
+    // ---- legs (dom total / opening -- the whole-run hold shape) ----
+    {key:'legs',label:'Strong legs',re:/\bstrong legs\b|\bgood legs\b|\blong legs\b|\bheld up well\b|\blegged out\b/,apply:function(){setBoLayer('legs',2.5,null);}},
+    {key:'legs',label:'Weak legs / front-loaded',re:/\bweak legs\b|\bfront-?loaded\b|\bfell off (fast|quickly)\b|\bsteep drop\b/,apply:function(){setBoLayer('legs',null,1.8);}},
+    // ---- latest weekend hold (the NEW weekly-trajectory metric) ----
+    {key:'hold',label:'Held well recently',re:/\bheld well\b|\bstrong hold\b|\bdidn'?t drop much\b|\bsmall (weekend )?drop\b/,apply:function(){setBoLayer('hold',-25,null,0);}},
+    {key:'hold',label:'Dropped hard recently',re:/\bdropped hard\b|\bcrashed\b|\bbig (weekend )?drop\b|\bcollapsed\b/,apply:function(){setBoLayer('hold',null,-50,0);}},
+    // ---- international share (IBO / WWBO) ----
+    {key:'share',label:'International-heavy',re:/\binternational[- ](heavy|skew|driven)\b|\bplays? better overseas\b|\bglobal appeal\b|\boverseas[- ]driven\b/,apply:function(){setBoLayer('share',55,null);}},
+    {key:'share',label:'Domestic-heavy',re:/\bdomestic[- ](heavy|skew|driven)\b|\bUS[- ]driven\b|\bhome[- ]market\b/,apply:function(){setBoLayer('share',null,40);}},
+    // ---- critical reception (RT critics) ----
+    {key:'rc',label:'Well-reviewed',re:/\bwell[- ]reviewed\b|\bcritically acclaimed\b|\bloved by critics\b|\bcritic favorite\b|\bhigh(ly)? rated\b/,apply:function(){S.rcmin=75;}},
+    {key:'rc',label:'Poorly reviewed',re:/\bpanned\b|\bpoorly reviewed\b|\bhated by critics\b|\bbombed with critics\b|\bcritically (savaged|trashed)\b/,apply:function(){S.rcmax=40;}},
+    // ---- release era ----
+    {key:'date',label:'2020s',re:/\b2020s\b/,apply:function(){S.dfrom='2020-01-01';S.dto='2029-12-31';}},
+    {key:'date',label:'2010s',re:/\b2010s\b/,apply:function(){S.dfrom='2010-01-01';S.dto='2019-12-31';}},
+    {key:'date',label:'2000s',re:/\b2000s\b/,apply:function(){S.dfrom='2000-01-01';S.dto='2009-12-31';}},
+    {key:'date',label:'1990s',re:/\b1990s\b/,apply:function(){S.dfrom='1990-01-01';S.dto='1999-12-31';}},
+    {key:'date',label:'Recent (last 3 years)',re:/\brecent\b|\bmodern\b|\blast few years\b/,apply:function(){
+      var y=new Date().getFullYear();S.dfrom=(y-3)+'-01-01';S.dto='';}}
+  ];
+  // Boost/legs/hold/share/ret all live on a SINGLE shared boLayers metric slot each (the same
+  // repeatable-layer mechanism the manual Box Office Metric row uses) -- setBoLayer finds or
+  // creates that metric's layer rather than pushing a duplicate every time smart search reruns.
+  function setBoLayer(metric,min,max,wk){
+    var lay=null;
+    for(var i=0;i<S.boLayers.length;i++) if(S.boLayers[i].metric===metric){lay=S.boLayers[i];break;}
+    if(!lay){
+      lay={metric:metric,min:null,max:null};
+      if(metric==='hold') lay.wk=0;
+      S.boLayers.push(lay);
+    }
+    if(min!==undefined) lay.min=min;
+    if(max!==undefined) lay.max=max;
+    if(wk!==undefined) lay.wk=wk;
+  }
+  function clearBoLayer(metric){
+    for(var i=S.boLayers.length-1;i>=0;i--) if(S.boLayers[i].metric===metric) S.boLayers.splice(i,1);
+    if(!S.boLayers.length) S.boLayers.push({metric:'dom',min:0,max:0});
+  }
+  var smartChipsApplied=[];   // [{key,label}] -- reapplySmartChips() rebuilds state from this list
+  function parseSmartQuery(text){
+    var t=text.toLowerCase();
+    var hits=[];
+    SMART_RULES.forEach(function(rule){
+      var m=t.match(rule.re);
+      if(!m) return;
+      var label=rule.labelFn?rule.labelFn(m):(typeof rule.label==='function'?rule.label(m):rule.label);
+      hits.push({key:rule.key,label:label,apply:function(){rule.apply(m);}});
+    });
+    return hits;
+  }
+  function reapplySmartChips(){
+    // Full reset of ONLY the fields smart search ever touches, then replay every remaining
+    // chip -- simpler and more robust than per-field undo, and it means removing one chip
+    // can never leave a stray filter behind from a rule that half-applied.
+    S.genres=[]; S.sourceIpCategory=[]; S.mpa=[]; S.budmin=0; S.budmax=0;
+    S.rcmin=0; S.rcmax=0; S.dfrom=''; S.dto='';
+    ['ret','legs','hold','share'].forEach(clearBoLayer);
+    smartChipsApplied.forEach(function(c){c.apply();});
+    // sync every manual control smart search can drive, so re-opening any dropdown shows the
+    // right checkboxes instead of looking empty while a filter is silently active.
+    updGenreBtn(); updSicBtn(); updTierBtn();
+    Array.prototype.forEach.call(document.querySelectorAll('#gpanel .gopt input'),function(cb){cb.checked=S.genres.indexOf(cb.getAttribute('data-g'))>=0;});
+    Array.prototype.forEach.call(document.querySelectorAll('#sicpanel .gopt input'),function(cb){cb.checked=S.sourceIpCategory.indexOf(cb.getAttribute('data-sic'))>=0;});
+    Array.prototype.forEach.call(document.querySelectorAll('#f-mpa .mpachip'),function(ch){ch.classList.toggle('on',S.mpa.indexOf(ch.getAttribute('data-r'))>=0);});
+    document.getElementById('f-budmin').value=formatMoney(S.budmin);
+    document.getElementById('f-budmax').value=formatMoney(S.budmax);
+    document.getElementById('f-rcmin').value=S.rcmin>0?S.rcmin:'';
+    document.getElementById('f-rcmax').value=S.rcmax>0?S.rcmax:'';
+    document.getElementById('f-dfrom').value=S.dfrom;
+    document.getElementById('f-dto').value=S.dto;
+    renderBoLayers();
+    renderSmartChips();
+    render();
+  }
+  function renderSmartChips(){
+    var box=document.getElementById('smartchips');
+    if(!smartChipsApplied.length){box.innerHTML='';return;}
+    box.innerHTML=smartChipsApplied.map(function(c,idx){
+      return '<span class="schip">'+esc(c.label)+'<button type="button" data-idx="'+idx+'" aria-label="Remove">&times;</button></span>';
+    }).join('');
+    Array.prototype.forEach.call(box.querySelectorAll('button'),function(b){
+      b.onclick=function(){smartChipsApplied.splice(+b.getAttribute('data-idx'),1);reapplySmartChips();};
+    });
+  }
+  function applySmartQuery(){
+    var input=document.getElementById('f-smart');
+    var hits=parseSmartQuery(input.value);
+    // De-dupe by key: the most recent match for a given axis wins (e.g. typing both "R-rated"
+    // and "PG-13" only keeps the last -- MPAA is a single-choice axis by construction).
+    var byKey={};
+    hits.forEach(function(h){byKey[h.key]=h;});
+    var seen={}; smartChipsApplied.forEach(function(c){seen[c.key]=1;});
+    // fresh apply each time text changes -- rebuild the whole chip list from this parse.
+    smartChipsApplied=Object.keys(byKey).map(function(k){return byKey[k];});
+    reapplySmartChips();
+    var nomatch=document.getElementById('smartchips');
+    if(!smartChipsApplied.length&&input.value.trim()){
+      nomatch.innerHTML='<span class="smartnomatch">Didn\'t recognize any filters in that -- try mentioning genre, budget, franchise vs. original, legs/hold, international skew, or reception.</span>';
+    }
+  }
+  document.getElementById('f-smart-apply').onclick=applySmartQuery;
+  document.getElementById('f-smart').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();applySmartQuery();}};
+
   // ---- wire controls ----------------------------------------------------------------------
   document.getElementById('f-q').oninput=function(e){S.q=e.target.value.trim().toLowerCase();render();};
   // Comp Mode entry/exit — entry requires the search to have narrowed to exactly one title
@@ -3043,6 +3212,9 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     if(rt.value!=='boxoffice'){rt.value='boxoffice';rt.onchange();}
     closeAllPanels();
     rebuildStudios(); rebuildLabels();
+    smartChipsApplied=[];
+    document.getElementById('f-smart').value='';
+    document.getElementById('smartchips').innerHTML='';
   }
   function resetAll(){
     resetState(); render(); window.scrollTo(0,0);
