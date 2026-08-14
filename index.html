@@ -1874,7 +1874,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   // Advanced (second-tier) filters live in the same S object: bud*/rc*/ra* min-max ranges
   // (0 = unset) and mpa[] (empty = all ratings). A record missing a filtered field is
   // excluded while that advanced filter is active (coverage disclosed in the footer).
-  var S={q:"",studios:[],labels:[],years:[],dfrom:"",dto:"",genres:[],gmode:"any",subgenres:[],smode:"any",tiers:[],size:"",opmin:0,opmax:0,thmin:0,thmax:0,sourceIpCategory:[],sourceIpDetail:[],statuses:[],rerelease:false,boxtype:"ww",boLayers:[{metric:"dom",min:0,max:0}],peopleLayers:[{role:"director",name:""}],pmode:"any",awardLayers:[{aw:"",cat:"",res:"w"}],comps:false,localLang:false,events:false,budmin:0,budmax:0,rcmin:0,rcmax:0,ramin:0,ramax:0,mpa:[],excl:[],pins:[],comp:"",view:""};
+  var S={q:"",studios:[],labels:[],years:[],dfrom:"",dto:"",genres:[],primaryGenre:[],gmode:"any",subgenres:[],smode:"any",tiers:[],size:"",opmin:0,opmax:0,thmin:0,thmax:0,sourceIpCategory:[],sourceIpDetail:[],statuses:[],rerelease:false,boxtype:"ww",boLayers:[{metric:"dom",min:0,max:0}],peopleLayers:[{role:"director",name:""}],pmode:"any",awardLayers:[{aw:"",cat:"",res:"w"}],comps:false,localLang:false,events:false,budmin:0,budmax:0,rcmin:0,rcmax:0,ramin:0,ramax:0,mpa:[],excl:[],pins:[],comp:"",view:""};
   var SG_LABELS={"anime": "Anime", "biopic": "Biopic", "buddy": "Buddy", "coming_of_age": "Coming of Age", "concert_film": "Concert Film", "contained": "Contained", "creature_feature": "Creature Feature", "crime": "Crime", "dark_comedy": "Dark Comedy", "disaster": "Disaster", "dystopian": "Dystopian", "fairy_tale_folklore": "Fairy Tale / Folklore", "faith": "Faith", "foreign_language": "Foreign Language", "found_footage": "Found Footage", "heist": "Heist", "holiday": "Holiday", "martial_arts": "Martial Arts", "military_war": "Military / War", "mockumentary": "Mockumentary", "murder_mystery": "Murder Mystery", "noir": "Noir", "opera_stage_capture": "Opera / Stage Capture", "parody_spoof": "Parody / Spoof", "historical_period": "Period / Historical", "political": "Political", "post_apocalyptic": "Post-Apocalyptic", "psychological": "Psychological", "road_movie": "Road Movie", "satire": "Satire", "slasher": "Slasher", "space": "Space", "sports": "Sports", "espionage_spy": "Spy / Espionage", "star_led": "Star-Led", "superhero": "Superhero", "supernatural": "Supernatural", "survival": "Survival", "time_travel": "Time Travel", "true_crime": "True Crime", "vampire": "Vampire", "western": "Western", "young_adult": "Young Adult", "zombie": "Zombie"};
 
   // Count of active ADVANCED filters (per-filter: a min/max range counts once, not twice).
@@ -1906,6 +1906,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     if(S.events)c++;
     if(S.statuses.length)c++;
     if(S.genres.length)c++;
+    if(S.primaryGenre.length)c++;
     if(S.subgenres.length)c++;
     if(S.boxtype!=='ww')c++;
     if(S.excl.length||S.pins.length)c++;
@@ -2278,6 +2279,16 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
       for(var gi=0;gi<S.genres.length;gi++) if(gn.indexOf(S.genres[gi])>=0) hits++;
       if(S.gmode==='all' ? hits<S.genres.length : hits===0) return false;
     }
+    // Primary genre (smart search only -- 2026-08-14, user report): "Genre includes Drama
+    // ANYWHERE" (the manual filter above, deliberately position-agnostic for power-user
+    // multi-genre browsing) let big-budget-drama searches fill up with Black Panther/The
+    // Lion King/Hunger Games/War for the Apes -- all genuinely primary action or animation,
+    // with drama only as classification.genre_secondary. r.gn[0] is always the record's
+    // PRIMARY genre (genres_and_tags() puts classification.genre first, genre_secondary
+    // second) -- checking only that slot is what "give me dramas" means in plain English.
+    // Separate array from S.genres on purpose: the manual Genre dropdown keeps its documented
+    // ANY/ALL semantics untouched; this is a stricter, ADDITIONAL gate smart search alone uses.
+    if(S.primaryGenre.length && (!r.gn || !r.gn.length || S.primaryGenre.indexOf(r.gn[0])<0)) return false;
     // Subgenre tags (classification.tags): same ANY/ALL semantics, ANDed with Genre —
     // Genre Horror + Subgenre Supernatural = supernatural-horror comp set.
     if(S.subgenres.length&&skip!=='subgenre'){
@@ -2612,19 +2623,19 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   // understood is never silent; text that matches nothing says so instead of guessing.
   var SMART_RULES=[
     // ---- genre (one chip per genre so each is independently removable) ----
-    {key:'genre:Sci-Fi',label:'Genre: Sci-Fi',re:/\bsci-?fi\b|\bscience fiction\b/,apply:function(){if(S.genres.indexOf('Sci-Fi')<0)S.genres.push('Sci-Fi');}},
-    {key:'genre:Action',label:'Genre: Action',re:/\baction\b/,apply:function(){if(S.genres.indexOf('Action')<0)S.genres.push('Action');}},
-    {key:'genre:Adventure',label:'Genre: Adventure',re:/\badventure\b/,apply:function(){if(S.genres.indexOf('Adventure')<0)S.genres.push('Adventure');}},
-    {key:'genre:Animation',label:'Genre: Animation',re:/\banimat(ed|ion)\b/,apply:function(){if(S.genres.indexOf('Animation')<0)S.genres.push('Animation');}},
-    {key:'genre:Comedy',label:'Genre: Comedy',re:/\bcomedy\b|\brom-?com\b/,apply:function(){if(S.genres.indexOf('Comedy')<0)S.genres.push('Comedy');}},
-    {key:'genre:Documentary',label:'Genre: Documentary',re:/\bdocumentary\b/,apply:function(){if(S.genres.indexOf('Documentary')<0)S.genres.push('Documentary');}},
-    {key:'genre:Drama',label:'Genre: Drama',re:/\bdrama\b/,apply:function(){if(S.genres.indexOf('Drama')<0)S.genres.push('Drama');}},
-    {key:'genre:Family',label:'Genre: Family',re:/\bfamily(-| )?(friendly|film|movie)?\b/,apply:function(){if(S.genres.indexOf('Family')<0)S.genres.push('Family');}},
-    {key:'genre:Fantasy',label:'Genre: Fantasy',re:/\bfantasy\b/,apply:function(){if(S.genres.indexOf('Fantasy')<0)S.genres.push('Fantasy');}},
-    {key:'genre:Horror',label:'Genre: Horror',re:/\bhorror\b/,apply:function(){if(S.genres.indexOf('Horror')<0)S.genres.push('Horror');}},
-    {key:'genre:Musical',label:'Genre: Musical',re:/\bmusical\b/,apply:function(){if(S.genres.indexOf('Musical')<0)S.genres.push('Musical');}},
-    {key:'genre:Romance',label:'Genre: Romance',re:/\bromance\b|\bromantic\b/,apply:function(){if(S.genres.indexOf('Romance')<0)S.genres.push('Romance');}},
-    {key:'genre:Thriller',label:'Genre: Thriller',re:/\bthriller\b/,apply:function(){if(S.genres.indexOf('Thriller')<0)S.genres.push('Thriller');}},
+    {key:'genre:Sci-Fi',label:'Primary genre: Sci-Fi',re:/\bsci-?fi\b|\bscience fiction\b/,apply:function(){if(S.primaryGenre.indexOf('Sci-Fi')<0)S.primaryGenre.push('Sci-Fi');}},
+    {key:'genre:Action',label:'Primary genre: Action',re:/\baction\b/,apply:function(){if(S.primaryGenre.indexOf('Action')<0)S.primaryGenre.push('Action');}},
+    {key:'genre:Adventure',label:'Primary genre: Adventure',re:/\badventure\b/,apply:function(){if(S.primaryGenre.indexOf('Adventure')<0)S.primaryGenre.push('Adventure');}},
+    {key:'genre:Animation',label:'Primary genre: Animation',re:/\banimat(ed|ion)\b/,apply:function(){if(S.primaryGenre.indexOf('Animation')<0)S.primaryGenre.push('Animation');}},
+    {key:'genre:Comedy',label:'Primary genre: Comedy',re:/\bcomedy\b|\brom-?com\b/,apply:function(){if(S.primaryGenre.indexOf('Comedy')<0)S.primaryGenre.push('Comedy');}},
+    {key:'genre:Documentary',label:'Primary genre: Documentary',re:/\bdocumentary\b/,apply:function(){if(S.primaryGenre.indexOf('Documentary')<0)S.primaryGenre.push('Documentary');}},
+    {key:'genre:Drama',label:'Primary genre: Drama',re:/\bdrama\b/,apply:function(){if(S.primaryGenre.indexOf('Drama')<0)S.primaryGenre.push('Drama');}},
+    {key:'genre:Family',label:'Primary genre: Family',re:/\bfamily(-| )?(friendly|film|movie)?\b/,apply:function(){if(S.primaryGenre.indexOf('Family')<0)S.primaryGenre.push('Family');}},
+    {key:'genre:Fantasy',label:'Primary genre: Fantasy',re:/\bfantasy\b/,apply:function(){if(S.primaryGenre.indexOf('Fantasy')<0)S.primaryGenre.push('Fantasy');}},
+    {key:'genre:Horror',label:'Primary genre: Horror',re:/\bhorror\b/,apply:function(){if(S.primaryGenre.indexOf('Horror')<0)S.primaryGenre.push('Horror');}},
+    {key:'genre:Musical',label:'Primary genre: Musical',re:/\bmusical\b/,apply:function(){if(S.primaryGenre.indexOf('Musical')<0)S.primaryGenre.push('Musical');}},
+    {key:'genre:Romance',label:'Primary genre: Romance',re:/\bromance\b|\bromantic\b/,apply:function(){if(S.primaryGenre.indexOf('Romance')<0)S.primaryGenre.push('Romance');}},
+    {key:'genre:Thriller',label:'Primary genre: Thriller',re:/\bthriller\b/,apply:function(){if(S.primaryGenre.indexOf('Thriller')<0)S.primaryGenre.push('Thriller');}},
     // ---- source IP category ----
     {key:'ipcat',label:'Franchise',re:/\bfranchise\b|\bsequel\b|\bpart of a series\b/,apply:function(){S.sourceIpCategory=['franchise'];}},
     {key:'ipcat',label:'Original (non-franchise)',re:/\boriginal\b|\bnon-?franchise\b|\bstandalone\b/,apply:function(){S.sourceIpCategory=['original'];}},
@@ -2702,14 +2713,17 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     // Full reset of ONLY the fields smart search ever touches, then replay every remaining
     // chip -- simpler and more robust than per-field undo, and it means removing one chip
     // can never leave a stray filter behind from a rule that half-applied.
-    S.genres=[]; S.sourceIpCategory=[]; S.mpa=[]; S.budmin=0; S.budmax=0;
+    // S.primaryGenre is NOT synced to the manual Genre dropdown/checkboxes (unlike every
+    // other field here) -- it's a deliberately separate, stricter gate (r.gn[0] only) that
+    // the manual ANY/ALL Genre filter doesn't have a checkbox for. The chip is its own
+    // transparency; see the primaryGenre pass() gate comment for why the split exists.
+    S.primaryGenre=[]; S.sourceIpCategory=[]; S.mpa=[]; S.budmin=0; S.budmax=0;
     S.rcmin=0; S.rcmax=0; S.dfrom=''; S.dto='';
     ['ret','legs','hold','share','star'].forEach(clearBoLayer);
     smartChipsApplied.forEach(function(c){c.apply();});
     // sync every manual control smart search can drive, so re-opening any dropdown shows the
     // right checkboxes instead of looking empty while a filter is silently active.
-    updGenreBtn(); updSicBtn(); updTierBtn();
-    Array.prototype.forEach.call(document.querySelectorAll('#gpanel .gopt input'),function(cb){cb.checked=S.genres.indexOf(cb.getAttribute('data-g'))>=0;});
+    updSicBtn(); updTierBtn();
     Array.prototype.forEach.call(document.querySelectorAll('#sicpanel .gopt input'),function(cb){cb.checked=S.sourceIpCategory.indexOf(cb.getAttribute('data-sic'))>=0;});
     Array.prototype.forEach.call(document.querySelectorAll('#f-mpa .mpachip'),function(ch){ch.classList.toggle('on',S.mpa.indexOf(ch.getAttribute('data-r'))>=0);});
     document.getElementById('f-budmin').value=formatMoney(S.budmin);
@@ -3171,7 +3185,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   // earlier "view survives Reset" call). resetState() clears without rendering so presets
   // (the NOW IN RELEASE live board) can layer on top and render once.
   function resetState(){
-    S={q:"",studios:[],labels:[],years:[],dfrom:"",dto:"",genres:[],gmode:"any",subgenres:[],smode:"any",tiers:[],size:"",opmin:0,opmax:0,thmin:0,thmax:0,sourceIpCategory:[],sourceIpDetail:[],statuses:[],rerelease:false,boxtype:"ww",boLayers:[{metric:"dom",min:0,max:0}],peopleLayers:[{role:"director",name:""}],pmode:"any",awardLayers:[{aw:"",cat:"",res:"w"}],comps:false,localLang:false,events:false,budmin:0,budmax:0,rcmin:0,rcmax:0,ramin:0,ramax:0,mpa:[],excl:[],pins:[],comp:"",view:""};
+    S={q:"",studios:[],labels:[],years:[],dfrom:"",dto:"",genres:[],primaryGenre:[],gmode:"any",subgenres:[],smode:"any",tiers:[],size:"",opmin:0,opmax:0,thmin:0,thmax:0,sourceIpCategory:[],sourceIpDetail:[],statuses:[],rerelease:false,boxtype:"ww",boLayers:[{metric:"dom",min:0,max:0}],peopleLayers:[{role:"director",name:""}],pmode:"any",awardLayers:[{aw:"",cat:"",res:"w"}],comps:false,localLang:false,events:false,budmin:0,budmax:0,rcmin:0,rcmax:0,ramin:0,ramax:0,mpa:[],excl:[],pins:[],comp:"",view:""};
     syncVtoggle();
     document.getElementById('f-q').value='';
     document.getElementById('f-pin').value='';
