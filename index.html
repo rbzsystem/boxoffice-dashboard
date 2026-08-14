@@ -1932,6 +1932,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     if(key==='ibodbo') return r.ib;
     if(key==='ret') return r.rx;
     if(key==='hold') return holdAtWeek(r,wk);
+    if(key==='star') return starTier(r);
     if(key==='rtc') return r.rc==null?-1:r.rc;   // no score sorts below a genuine 0%
     if(key==='rta') return r.ra==null?-1:r.ra;
     return r.ww;   // ww, and the min/max fallback while a date sort is active
@@ -1942,7 +1943,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   var METRIC_UI={ow:['$','Box Office'],dom:['$','Box Office'],intl:['$','Box Office'],
                  ww:['$','Box Office'],exww:['$','Box Office ex-China'],cn:['$','Box Office (China)'],
                  legs:['x','Legs Multiple'],share:['%','Intl Share'],ibodbo:['%','Intl Ratio (IBO/DBO)'],ret:['x','Return Multiple'],
-                 hold:['%','Wk-over-Wk Hold'],
+                 hold:['%','Wk-over-Wk Hold'],star:['$',"Lead's Typical Headline Gross"],
                  datenew:['$','Box Office (WW)'],dateold:['$','Box Office (WW)']};
 
   // ---- Box Office row: repeatable metric layers (S.boLayers), AND'd together in pass().
@@ -1953,7 +1954,8 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     ['legs','Legs Multiple (DOM &divide; OW)'],['share','International Share %'],
     ['ibodbo','International Ratio % (IBO/DBO)'],
     ['ret','Return Multiple (WW &divide; Budget)'],
-    ['hold','Wk-over-Wk Hold %']
+    ['hold','Wk-over-Wk Hold %'],
+    ['star',"Star Power (lead's typical headline gross)"]
   ];
   // Highest weekend_number any title has captured -- sizes the per-layer weekend picker so it
   // never falls behind the data (recomputed fresh at every render since this deploys daily).
@@ -2648,6 +2650,9 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     // ---- latest weekend hold (the NEW weekly-trajectory metric) ----
     {key:'hold',label:'Held well recently',re:/\bheld well\b|\bstrong hold\b|\bdidn'?t drop much\b|\bsmall (weekend )?drop\b/,apply:function(){setBoLayer('hold',-25,null,0);}},
     {key:'hold',label:'Dropped hard recently',re:/\bdropped hard\b|\bcrashed\b|\bbig (weekend )?drop\b|\bcollapsed\b/,apply:function(){setBoLayer('hold',null,-50,0);}},
+    // ---- star power (starTier -- the top-2-billed cast's typical headline-film gross) ----
+    {key:'star',label:'Star-driven / star vehicle',re:/\bstar[- ]driven\b|\bstar vehicle\b|\bstar power\b|\bstar-studded\b|\ba-list\b|\bheadlined by a star\b|\bmarquee (star|name)\b|\bcarried by (a |its )?star\b/,apply:function(){setBoLayer('star',200e6,null);}},
+    {key:'star',label:'No major stars / unknown cast',re:/\bno[- ](major |big |name )?stars?\b|\bunknown cast\b|\bno[- ]name cast\b|\bnon-?star cast\b/,apply:function(){setBoLayer('star',null,100e6);}},
     // ---- international share (IBO / WWBO) ----
     {key:'share',label:'International-heavy',re:/\binternational[- ](heavy|skew|driven)\b|\bplays? better overseas\b|\bglobal appeal\b|\boverseas[- ]driven\b/,apply:function(){setBoLayer('share',55,null);}},
     {key:'share',label:'Domestic-heavy',re:/\bdomestic[- ](heavy|skew|driven)\b|\bUS[- ]driven\b|\bhome[- ]market\b/,apply:function(){setBoLayer('share',null,40);}},
@@ -2699,7 +2704,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     // can never leave a stray filter behind from a rule that half-applied.
     S.genres=[]; S.sourceIpCategory=[]; S.mpa=[]; S.budmin=0; S.budmax=0;
     S.rcmin=0; S.rcmax=0; S.dfrom=''; S.dto='';
-    ['ret','legs','hold','share'].forEach(clearBoLayer);
+    ['ret','legs','hold','share','star'].forEach(clearBoLayer);
     smartChipsApplied.forEach(function(c){c.apply();});
     // sync every manual control smart search can drive, so re-opening any dropdown shows the
     // right checkboxes instead of looking empty while a filter is silently active.
