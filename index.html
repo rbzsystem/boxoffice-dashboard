@@ -2691,6 +2691,42 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     // "comic" alone is deliberately NOT a trigger -- it reads as comedic ("comic caper")
     // as often as comic-book. Requires the compound or an unambiguous synonym.
     {key:'comic',label:'Comic book / superhero',re:/\bcomic[- ]?books?\b|\bcomics\b|\bsuper[- ]?hero(es)?\b|\bgraphic novels?\b|\bmanga\b/,apply:function(){S.comicBook=true;}},
+    // ---- source IP detail (2026-08-14, user report) -- reuses S.sourceIpDetail, the SAME
+    // field the manual "Source IP Detail" dropdown drives, unlike primaryGenre/commercialDriver/
+    // comicBook above. Those three were kept smart-search-only because they're derived or
+    // stricter-than-manual signals; these are exact classification.source_ip_detail values, so
+    // there's no daylight between "what smart search means" and "what the field records" --
+    // reusing it is correct, not a shortcut. Each rule pushes its own value (not an assignment)
+    // so multiple compatible mentions in one query can coexist, same push pattern as primaryGenre.
+    // KNOWN LIMIT, deliberately not solved here: once a film is classified franchise/sequel or
+    // franchise/shared_universe, its ORIGIN material (comic, novel, video game...) is not
+    // separately recorded -- confirmed on real records: Aquaman (2018), the founding film of
+    // its franchise, is shared_universe with no comic_book value anywhere; Sonic the Hedgehog
+    // (2020), also a founding film, is shared_universe with an empty tags array and no
+    // equivalent "video_game" subgenre tag exists in the vocabulary at all (checked
+    // tags_enum() -- 'superhero' is the only origin-material tag that exists, which is why
+    // comic-book search above works via the tag and these detail rules only catch STANDALONE
+    // adaptations that never became a franchise, e.g. Joker's own record IS shared_universe
+    // too by the same rule). A true fix needs a new tag added to the vocabulary + a real
+    // classification pass, not a rendering-logic derivation -- there is no lineage signal
+    // in the DB today to derive FROM.
+    {key:'sid:true_story',label:'Source: True Story',re:/\btrue stor(y|ies)\b|\breal[- ]life story\b|\bbased on (a |the )?true (events?|story)\b/,apply:function(){if(S.sourceIpDetail.indexOf('true_story')<0)S.sourceIpDetail.push('true_story');}},
+    {key:'sid:biography',label:'Source: Biography',re:/\bbiopics?\b|\bbiographys?\b|\bbiographical\b|\bbiographics?\b/,apply:function(){if(S.sourceIpDetail.indexOf('biography')<0)S.sourceIpDetail.push('biography');}},
+    {key:'sid:novel',label:'Source: Novel',re:/\bnovels?\b/,apply:function(){if(S.sourceIpDetail.indexOf('novel')<0)S.sourceIpDetail.push('novel');}},
+    {key:'sid:childrens_book',label:"Source: Children's Book",re:/\bchildren'?s books?\b|\bkids?'? books?\b/,apply:function(){if(S.sourceIpDetail.indexOf('childrens_book')<0)S.sourceIpDetail.push('childrens_book');}},
+    {key:'sid:tv_series',label:'Source: TV Series',re:/\btv series\b|\btelevision series\b|\btv show\b|\bbased on the (tv|television) (series|show)\b/,apply:function(){if(S.sourceIpDetail.indexOf('tv_series')<0)S.sourceIpDetail.push('tv_series');}},
+    {key:'sid:stage_musical',label:'Source: Stage Musical',re:/\bstage musicals?\b|\bbroadway musicals?\b|\bbroadway show\b/,apply:function(){if(S.sourceIpDetail.indexOf('stage_musical')<0)S.sourceIpDetail.push('stage_musical');}},
+    {key:'sid:play',label:'Source: Play',re:/\bstage plays?\b|\bbased on the play\b|\btheatrical play\b/,apply:function(){if(S.sourceIpDetail.indexOf('play')<0)S.sourceIpDetail.push('play');}},
+    {key:'sid:mythology',label:'Source: Mythology',re:/\bmytholog(y|ies)\b|\bmyths?\b|\bgreek mythology\b|\bnorse mythology\b/,apply:function(){if(S.sourceIpDetail.indexOf('mythology')<0)S.sourceIpDetail.push('mythology');}},
+    {key:'sid:folklore',label:'Source: Folklore',re:/\bfolklores?\b|\bfolk tales?\b|\blegends?\b/,apply:function(){if(S.sourceIpDetail.indexOf('folklore')<0)S.sourceIpDetail.push('folklore');}},
+    {key:'sid:fairy_tale',label:'Source: Fairy Tale',re:/\bfairy tales?\b|\bfairytales?\b/,apply:function(){if(S.sourceIpDetail.indexOf('fairy_tale')<0)S.sourceIpDetail.push('fairy_tale');}},
+    {key:'sid:podcast',label:'Source: Podcast',re:/\bpodcasts?\b/,apply:function(){if(S.sourceIpDetail.indexOf('podcast')<0)S.sourceIpDetail.push('podcast');}},
+    {key:'sid:web_series',label:'Source: Web Series',re:/\bweb series\b|\bweb show\b/,apply:function(){if(S.sourceIpDetail.indexOf('web_series')<0)S.sourceIpDetail.push('web_series');}},
+    {key:'sid:board_game',label:'Source: Board Game',re:/\bboard games?\b/,apply:function(){if(S.sourceIpDetail.indexOf('board_game')<0)S.sourceIpDetail.push('board_game');}},
+    {key:'sid:theme_park_attraction',label:'Source: Theme Park Attraction',re:/\btheme park( attraction| ride)?\b|\bamusement park ride\b/,apply:function(){if(S.sourceIpDetail.indexOf('theme_park_attraction')<0)S.sourceIpDetail.push('theme_park_attraction');}},
+    {key:'sid:reboot',label:'Source: Reboot',re:/\breboots?\b|\bre-?imagining\b/,apply:function(){if(S.sourceIpDetail.indexOf('reboot')<0)S.sourceIpDetail.push('reboot');}},
+    {key:'sid:prequel',label:'Source: Prequel',re:/\bprequels?\b/,apply:function(){if(S.sourceIpDetail.indexOf('prequel')<0)S.sourceIpDetail.push('prequel');}},
+    {key:'sid:spinoff',label:'Source: Spin-off',re:/\bspin-?offs?\b/,apply:function(){if(S.sourceIpDetail.indexOf('spinoff')<0)S.sourceIpDetail.push('spinoff');}},
     // ---- MPAA ----
     {key:'mpa',label:'Rated R',re:/\br-?rated\b|\brated r\b/,apply:function(){S.mpa=['R'];}},
     {key:'mpa',label:'Rated PG-13',re:/\bpg-?13\b/,apply:function(){S.mpa=['PG-13'];}},
@@ -2764,7 +2800,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   // English words that sit one edit from a keyword ("start" is not a typo of "star") are
   // all left untouched -- a missed correction costs one chip; a wrong one fabricates a
   // filter the user never asked for, so every guard errs toward not correcting.
-  var SMART_LEX=['drama','comedy','thriller','horror','action','adventure','animation','animated','fantasy','romance','romantic','musical','documentary','franchise','sequel','original','standalone','adaptation','budget','tentpole','blockbuster','shoestring','star','stars','driven','vehicle','power','million','indie','arthouse','comic','comics','superhero','graphic','manga'];
+  var SMART_LEX=['drama','comedy','thriller','horror','action','adventure','animation','animated','fantasy','romance','romantic','musical','documentary','franchise','sequel','original','standalone','adaptation','budget','tentpole','blockbuster','shoestring','star','stars','driven','vehicle','power','million','indie','arthouse','comic','comics','superhero','graphic','manga','biopic','biography','novel','mythology','folklore','reboot','prequel','spinoff','podcast'];
   var SMART_STOP={'start':1,'starts':1,'stat':1,'stats':1,'auction':1,'faction':1,'fraction':1,'section':1,'nation':1,'ration':1,'action':1,'cosmic':1};
   // Damerau-Levenshtein (adjacent transposition counts as ONE edit -- "budgte" is one swap
   // from "budget", not two substitutions), bounded at `max` with early row-exit. 2026-08-14
@@ -2796,10 +2832,18 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
       var w=tok.toLowerCase();
       if(w.length<5 || SMART_STOP[w] || /[\d$\-]/.test(w)) return tok;
       if(SMART_LEX.indexOf(w)>=0) return tok;
-      // Length-scaled tolerance: short words get 1 edit; words of 8+ chars get 2
-      // ("documentry", "adaptaton"). Safe against a ~30-word lexicon because long words
-      // are sparse -- and the unique-candidate guard below still rejects any collision.
-      var max=w.length>=8?2:1;
+      // Flat 1-edit tolerance regardless of word length (2026-08-14, reverted the length-
+      // scaled 2-edit tier the same day it shipped): the motivating cases -- "documentry",
+      // "adaptaton" -- turned out to be ONE missing letter each (verified: editDist=1), not
+      // two, so 2-edit tolerance solved a problem that didn't exist while adversarial-testing
+      // the newly-added source-detail lexicon surfaced real damage from it (musician/
+      // musicians/musically all wrongly corrected to "musical"; geography->biography;
+      // mystical->musical -- none are typos of their targets, all are real, unrelated
+      // English words the wider net happened to reach at distance 2). Distance grows the
+      // false-positive surface combinatorially against a lexicon that keeps growing, while
+      // buying nothing over distance-1 for any case actually seen. Lesson: compute the edit
+      // distance a fix is meant to cover before choosing a tolerance for it, don't estimate.
+      var max=1;
       var cand=null;
       for(var i=0;i<SMART_LEX.length;i++){
         if(editDist(w,SMART_LEX[i],max)<=max || editDist(w,SMART_LEX[i]+'s',max)<=max){
@@ -2845,14 +2889,15 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     // other field here) -- it's a deliberately separate, stricter gate (r.gn[0] only) that
     // the manual ANY/ALL Genre filter doesn't have a checkbox for. The chip is its own
     // transparency; see the primaryGenre pass() gate comment for why the split exists.
-    S.primaryGenre=[]; S.commercialDriver=[]; S.sourceIpCategory=[]; S.comicBook=false; S.mpa=[]; S.budmin=0; S.budmax=0;
+    S.primaryGenre=[]; S.commercialDriver=[]; S.sourceIpCategory=[]; S.sourceIpDetail=[]; S.comicBook=false; S.mpa=[]; S.budmin=0; S.budmax=0;
     S.rcmin=0; S.rcmax=0; S.dfrom=''; S.dto='';
     ['ret','legs','hold','share','star'].forEach(clearBoLayer);
     smartChipsApplied.forEach(function(c){c.apply();});
     // sync every manual control smart search can drive, so re-opening any dropdown shows the
     // right checkboxes instead of looking empty while a filter is silently active.
-    updSicBtn(); updTierBtn();
+    updSicBtn(); updTierBtn(); updSidBtn();
     Array.prototype.forEach.call(document.querySelectorAll('#sicpanel .gopt input'),function(cb){cb.checked=S.sourceIpCategory.indexOf(cb.getAttribute('data-sic'))>=0;});
+    Array.prototype.forEach.call(document.querySelectorAll('#sidpanel .gopt input'),function(cb){cb.checked=S.sourceIpDetail.indexOf(cb.getAttribute('data-sid'))>=0;});
     Array.prototype.forEach.call(document.querySelectorAll('#f-mpa .mpachip'),function(ch){ch.classList.toggle('on',S.mpa.indexOf(ch.getAttribute('data-r'))>=0);});
     document.getElementById('f-budmin').value=formatMoney(S.budmin);
     document.getElementById('f-budmax').value=formatMoney(S.budmax);
