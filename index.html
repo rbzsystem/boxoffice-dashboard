@@ -408,6 +408,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     </div>
     <div class="smartchips" id="smartchips"></div>
     <div class="smartmiss" id="smartmiss"></div>
+    <div class="smartmiss" id="smartcompnote"></div>
   </div>
   </div>
   <div class="ctlrow">
@@ -996,6 +997,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     if(dc) dc.onclick=function(){
       var exiting=(S.comp===r.sl);
       S.comp=exiting?'':r.sl;
+      smartOwnsComp=false;  // manual action takes ownership away from smart search
       // Exit = reset -> main (poster) view; entering keeps the current view.
       if(exiting){S.view="";syncVtoggle();}
       closeDetail(); render(); window.scrollTo(0,0);
@@ -1050,6 +1052,75 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     r.__i=i;
     BYSLUG[r.sl]=r;
   });
+  // Title lookup index (2026-08-14, user report -- "comps for the Odyssey" should just work
+  // from the smart search box instead of requiring the Search Title box to narrow to exactly
+  // one result first). Same normalization on both the index keys and the query: lowercase,
+  // drop a leading article, strip punctuation -- "The Odyssey" and "the odyssey" collide on
+  // purpose. Excludes re-release rows (r.rr), mirroring the Compare button's own eligibility
+  // check (LAST_SHOWN.filter(function(r){return !r.rr;})) so this can never target a row the
+  // manual path wouldn't accept either.
+  function normTitle(s){
+    return (s||'').toLowerCase().replace(/^(the|a|an)\s+/,'')
+      .replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,' ').trim();
+  }
+  var TITLE_INDEX={};
+  DATA.forEach(function(r){
+    if(r.rr) return;
+    var key=normTitle(r.t);
+    (TITLE_INDEX[key]=TITLE_INDEX[key]||[]).push(r);
+  });
+  function resolveCompTarget(raw){
+    var q=normTitle(raw);
+    if(!q) return {status:'notfound'};
+    var ym=raw.match(/\b(19|20)\d{2}\b/), year=ym?ym[0]:null;
+    // Strip the recognized year OUT of the match text itself -- it's disambiguation input for
+    // narrow(), not part of the title. Left in, "comps for dune 2021" tokenizes to ["dune",
+    // "2021"], which no longer word-contains OR is contained by "dune part one"'s three-word
+    // key, silently breaking the very query the year was added to solve (caught testing).
+    if(year) q=q.replace(new RegExp('\\b'+year+'\\b'),'').replace(/\s+/g,' ').trim();
+    function narrow(rows){
+      if(rows.length<=1) return rows;
+      if(!year) return rows;
+      var y=rows.filter(function(r){return String(r.y)===year;});
+      return y.length?y:rows;
+    }
+    var exact=narrow(TITLE_INDEX[q]||[]);
+    if(exact.length===1) return {status:'ok',row:exact[0]};
+    if(exact.length>1) return {status:'ambiguous',rows:exact};
+    // Fallback: WHOLE-WORD containment either direction -- catches trailing filler the
+    // extraction regex swept in ("comps for the odyssey please") and minor phrasing drift.
+    // Word-level, not raw character substring: a naive q.indexOf(k) check let a run-on
+    // no-match sentence collide with tiny titles by pure character luck ("title" contains
+    // "it", "anywhere" contains "her") and returned a nonsense "ambiguous" list instead of a
+    // clean not-found (caught testing "comps for some fictional title that does not exist
+    // anywhere" -- matched It/Her/W./O/Here purely on substring, none intended). Requiring the
+    // shorter word-sequence to appear as a contiguous run of WHOLE words in the longer one
+    // fixes it: "odyssey" matches inside "odyssey please" (a real word), "her" does not match
+    // inside "anywhere" (not a word boundary there). Key length guard drops single-word,
+    // <4-char titles (It, O, W., X) from fallback matching entirely -- too generic to trust
+    // outside an exact match.
+    if(q.length<4) return {status:'notfound'};
+    var qWords=q.split(' ');
+    function containsWords(hay,needle){
+      if(needle.length>hay.length) return false;
+      for(var i=0;i+needle.length<=hay.length;i++){
+        var ok=true;
+        for(var j=0;j<needle.length;j++) if(hay[i+j]!==needle[j]){ok=false;break;}
+        if(ok) return true;
+      }
+      return false;
+    }
+    var subset=[];
+    Object.keys(TITLE_INDEX).forEach(function(k){
+      if(k.length<4) return;
+      var kWords=k.split(' ');
+      if(containsWords(qWords,kWords)||containsWords(kWords,qWords)) subset=subset.concat(TITLE_INDEX[k]);
+    });
+    subset=narrow(subset);
+    if(subset.length===1) return {status:'ok',row:subset[0]};
+    if(subset.length>1) return {status:'ambiguous',rows:subset};
+    return {status:'notfound'};
+  }
   wireOpen(document.getElementById('grid'));
   wireOpen(document.getElementById('lanescroll'));
   buildLane();
@@ -2790,6 +2861,14 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     if(!S.boLayers.length) S.boLayers.push({metric:'dom',min:0,max:0});
   }
   var smartChipsApplied=[];   // [{key,label}] -- reapplySmartChips() rebuilds state from this list
+  // Comp-mode ownership flag (2026-08-14): S.comp is shared between smart search's new
+  // "comps for X" phrase and the manual Search-Title-to-one-result Compare button. Only reset
+  // S.comp on a smart-search reapply if smart search itself is what's currently holding comp
+  // mode open -- otherwise removing an unrelated chip, or typing a second unrelated smart
+  // query, would silently kick a manually-opened comp view closed. Every manual entry/exit
+  // path (Compare button, in-panel toggle, Exit Comp Mode) sets this false to take ownership
+  // back; the compmode smart rule below sets it true.
+  var smartOwnsComp=false;
   // Typo tolerance (2026-08-14, user report): "Star driven dramas" silently dropped the
   // Drama chip because the rules matched exact words only. Two layers fix that: the rules
   // above now carry plural/inflected forms (dramas, comedies, thrillers...), and this
@@ -2859,9 +2938,39 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   // before/after/recent/released): if those went unmatched, the user should see it.
   var SMART_FILLER={'a':1,'an':1,'the':1,'and':1,'or':1,'of':1,'in':1,'on':1,'at':1,'to':1,'for':1,'with':1,'that':1,'this':1,'these':1,'those':1,'is':1,'are':1,'was':1,'were':1,'be':1,'been':1,'being':1,'it':1,'its':1,'as':1,'by':1,'from':1,'than':1,'then':1,'so':1,'but':1,'not':1,'also':1,'film':1,'films':1,'movie':1,'movies':1,'picture':1,'pictures':1,'title':1,'titles':1,'show':1,'me':1,'all':1,'any':1,'some':1,'which':1,'what':1,'i':1,'we':1,'want':1,'looking':1,'find':1,'give':1,'get':1,'see':1,'like':1,'really':1,'very':1,'more':1,'have':1,'has':1,'had':1,'do':1,'does':1};
   var smartLeftover='';
+  // Comp-intent phrasing (2026-08-14, user report): "give me comps for the Odyssey" / "compare
+  // X" -- captures everything after the trigger phrase as a title, resolves it against
+  // TITLE_INDEX, and on a UNIQUE match becomes a removable chip that opens the SAME Comp Mode
+  // the "Compare" button opens (S.comp=slug), not a new UI. Deliberately only short-circuits
+  // into Comp Mode on a confident resolution -- ambiguous/notfound falls through to normal
+  // SMART_RULES parsing untouched (so "comps for star driven dramas", which isn't really a
+  // title lookup, still yields its ordinary filter chips instead of a dead end).
+  var COMP_INTENT_PATTERNS=[
+    /\b(?:give me |show me |get me |pull |build |find )?comps?(?:\s+set)?\s+(?:for|on|of)\s+(.+?)\s*$/,
+    /\bcompare\s+(?:to\s+)?(.+?)\s*$/
+  ];
+  var smartCompNote='';
   function parseSmartQuery(text){
+    smartCompNote='';
     var t=normalizeSmartQuery(text.toLowerCase());
     var hits=[], spans=[];
+    for(var ci=0;ci<COMP_INTENT_PATTERNS.length;ci++){
+      var cm=t.match(COMP_INTENT_PATTERNS[ci]);
+      if(!cm||!cm[1]) continue;
+      var res=resolveCompTarget(cm[1]);
+      if(res.status==='ok'){
+        spans.push([cm.index, cm.index+cm[0].length]);
+        hits.push({key:'compmode',label:'Comp Mode: '+res.row.t+' ('+res.row.y+')',
+          apply:(function(sl){return function(){S.comp=sl; smartOwnsComp=true;};})(res.row.sl)});
+      } else if(res.status==='ambiguous'){
+        spans.push([cm.index, cm.index+cm[0].length]);
+        var shown=res.rows.slice(0,8).map(function(r){return r.t+' ('+r.y+')';}).join(', ')
+          +(res.rows.length>8?', +'+(res.rows.length-8)+' more':'');
+        smartCompNote='Multiple titles match "'+cm[1].trim()+'" -- add a year to narrow (e.g. "comps for '+cm[1].trim()+' 2024"): '+shown;
+      }
+      // notfound: leave untouched, let normal parsing + the existing leftover line handle it.
+      break;
+    }
     SMART_RULES.forEach(function(rule){
       var m=t.match(rule.re);
       if(!m) return;
@@ -2891,6 +3000,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     // transparency; see the primaryGenre pass() gate comment for why the split exists.
     S.primaryGenre=[]; S.commercialDriver=[]; S.sourceIpCategory=[]; S.sourceIpDetail=[]; S.comicBook=false; S.mpa=[]; S.budmin=0; S.budmax=0;
     S.rcmin=0; S.rcmax=0; S.dfrom=''; S.dto='';
+    if(smartOwnsComp){S.comp=''; smartOwnsComp=false;}  // only reclaim comp mode if SMART SEARCH is what opened it
     ['ret','legs','hold','share','star'].forEach(clearBoLayer);
     smartChipsApplied.forEach(function(c){c.apply();});
     // sync every manual control smart search can drive, so re-opening any dropdown shows the
@@ -2927,9 +3037,11 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     var byKey={};
     hits.forEach(function(h){byKey[h.key]=h;});
     var seen={}; smartChipsApplied.forEach(function(c){seen[c.key]=1;});
+    var wantsComp=hits.some(function(h){return h.key==='compmode';});
     // fresh apply each time text changes -- rebuild the whole chip list from this parse.
     smartChipsApplied=Object.keys(byKey).map(function(k){return byKey[k];});
     reapplySmartChips();
+    if(wantsComp) window.scrollTo(0,0);  // same jump-to-top the manual Compare button does
     var nomatch=document.getElementById('smartchips');
     if(!smartChipsApplied.length&&input.value.trim()){
       nomatch.innerHTML='<span class="smartnomatch">Didn\'t recognize any filters in that -- try mentioning genre, budget, franchise vs. original, legs/hold, international skew, or reception.</span>';
@@ -2938,6 +3050,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     // land (the zero-chip case already gets the fuller message above).
     document.getElementById('smartmiss').textContent=
       (smartChipsApplied.length&&smartLeftover)?('Didn\'t understand: “'+smartLeftover+'”'):'';
+    document.getElementById('smartcompnote').textContent=smartCompNote;
   }
   document.getElementById('f-smart-apply').onclick=applySmartQuery;
   document.getElementById('f-smart').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();applySmartQuery();}};
@@ -2950,10 +3063,10 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     if(this.disabled) return;
     var tg=LAST_SHOWN.filter(function(r){return !r.rr;});
     if(tg.length!==1) return;
-    S.comp=tg[0].sl; render(); window.scrollTo(0,0);
+    S.comp=tg[0].sl; smartOwnsComp=false; render(); window.scrollTo(0,0);
   };
   // Exiting Comp Mode is a reset — return to the main (poster) view (user-directed 2026-07-25).
-  document.getElementById('compexit').onclick=function(){S.comp=""; S.view=""; syncVtoggle(); render();};
+  document.getElementById('compexit').onclick=function(){S.comp=""; smartOwnsComp=false; S.view=""; syncVtoggle(); render();};
   // In-banner view toggle (user-requested 2026-07-27: reach the title table on mobile
   // without opening Filters) — same state + sync path as the Filters vtoggle.
   document.getElementById('compview').onclick=function(){
@@ -3409,9 +3522,11 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     closeAllPanels();
     rebuildStudios(); rebuildLabels();
     smartChipsApplied=[];
+    smartOwnsComp=false;
     document.getElementById('f-smart').value='';
     document.getElementById('smartchips').innerHTML='';
     document.getElementById('smartmiss').textContent='';
+    document.getElementById('smartcompnote').textContent='';
   }
   function resetAll(){
     resetState(); render(); window.scrollTo(0,0);
