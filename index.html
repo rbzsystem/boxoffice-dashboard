@@ -2946,8 +2946,13 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   // SMART_RULES parsing untouched (so "comps for star driven dramas", which isn't really a
   // title lookup, still yields its ordinary filter chips instead of a dead end).
   var COMP_INTENT_PATTERNS=[
-    /\b(?:give me |show me |get me |pull |build |find )?comps?(?:\s+set)?\s+(?:for|on|of)\s+(.+?)\s*$/,
-    /\bcompare\s+(?:to\s+)?(.+?)\s*$/
+    /\b(?:give me |show me |get me |pull |build |find )?comps?(?:\s+set)?\s+(?:for|on|of|like)\s+(.+?)\s*$/,
+    /\bcompare\s+(?:to\s+)?(.+?)\s*$/,
+    // "movies/films like X" and standalone "similar to X" -- the natural phrasing that
+    // motivated this fix ("comps like sinners" was missing the "like" connector above; these
+    // two catch the equally natural forms that don't lead with "comp(s)" at all).
+    /\b(?:movies?|films?)\s+(?:like|similar to)\s+(.+?)\s*$/,
+    /\bsimilar to\s+(.+?)\s*$/
   ];
   var smartCompNote='';
   function parseSmartQuery(text){
