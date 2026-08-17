@@ -2340,6 +2340,15 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     var floor=censusFloor();
     var hasPeople=false;
     for(var pfi=0;pfi<S.peopleLayers.length;pfi++) if(S.peopleLayers[pfi].name){hasPeople=true;break;}
+    // Smart-search talent counts as a deliberate person lookup too (2026-08-17 bug fix): the
+    // census floor exists so pre-2013 comps don't clutter general browsing, and a named-person
+    // search has ALWAYS lifted it -- but when smart-search talent shipped (c2bfe9a4) this check
+    // still only read S.peopleLayers, so the SAME query answered differently depending on which
+    // box you typed it in: manual Cast "Will Smith" returned 24 films (incl. I Am Legend,
+    // Hancock, Men in Black 2/3, Bad Boys II), smart search "will smith action" returned 4.
+    // A new filter that reuses an existing axis has to be added to every gate that axis
+    // participates in, not just its own pass() branch.
+    if(S.smartPeople.length) hasPeople=true;
     // An active awards layer is a deliberate lookup too (same as a people search): "every
     // Best Picture winner in the DB" should reach the pre-census comps. The language/
     // rerelease/events gates below stay — they have their own include-checkboxes.
