@@ -409,6 +409,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     <div class="smartchips" id="smartchips"></div>
     <div class="smartmiss" id="smartmiss"></div>
     <div class="smartmiss" id="smartcompnote"></div>
+    <div class="smartmiss" id="smartranknote"></div>
   </div>
   </div>
   <div class="ctlrow">
@@ -2333,6 +2334,80 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   // own selection — backs the live facet counts (picking Action must not zero Comedy's count).
   // DATA.filter(pass) passes the element INDEX as the 2nd arg; a number never equals the
   // skip strings, so plain filtering is unaffected.
+  // ---- Smart-search relevance (2026-08-18, user-directed) --------------------------------
+  // "Natural-language searches should rank by combined person prominence + genre prominence,
+  // not by primary_genre alone and not by cast membership alone."
+  //
+  // TALENT prominence answers "is this person central to the film" -- billing position from
+  // film.cast_top_billed (real TMDB billing order; film.cast is ALPHABETIZED and useless for
+  // this, hence the neutral-low fallback when a record predates the billing backfill).
+  // GENRE prominence answers "is this genre central to the film" -- primary slot vs secondary,
+  // with a penalty when the record's own classification says the SUBJECT is what sells it.
+  //
+  // The subject-is-the-draw penalty is deliberately narrow, validated against the full
+  // 354-film action-secondary census before shipping: biopic/faith tags or true_story_interest/
+  // faith_values drivers flag 12 films (American Sniper, Black Mass, Hacksaw Ridge, Rush,
+  // Napoleon, Monuments Men, Lost City of Z...) -- exactly the "true story is the draw, action
+  // is texture" class. Explicitly NOT used as markers: historical_period / military_war (LOTR,
+  // Gladiator carry them and are action-forward), Oscar nods (King Kong, The Hobbit), and
+  // filmmaker_brand (Ad Astra, Once Upon a Time in Hollywood carry it and must surface). A
+  // wider marker set was tried first and rejected on that evidence.
+  var SMART_REL_MIN=0.2;              // below this, the match is technically-true but not useful
+  var SUBJ_DRAW_TAGS={'biopic':1,'faith':1};
+  var SUBJ_DRAW_DRIVERS={'true_story_interest':1,'faith_values':1};
+  function subjectIsTheDraw(r){
+    var sg=r.sg||[];
+    for(var i=0;i<sg.length;i++) if(SUBJ_DRAW_TAGS[sg[i]]) return true;
+    var dr=r.dr||[];
+    for(var j=0;j<dr.length;j++) if(SUBJ_DRAW_DRIVERS[dr[j]]) return true;
+    return false;
+  }
+  // 1.0 primary slot · 0.5 secondary · 0.175 secondary-but-commercially-incidental (below
+  // SMART_REL_MIN on its own, so Hacksaw Ridge drops out of "Andrew Garfield action" while a
+  // 3rd-billed actor in a genuine secondary-genre film, 0.7*0.5=0.35, still makes the cut).
+  function smartGenreProm(r){
+    if(!S.primaryGenre.length) return 1;
+    var gn=r.gn||[], best=0;
+    for(var i=0;i<S.primaryGenre.length;i++){
+      var g=S.primaryGenre[i];
+      if(gn[0]===g) best=Math.max(best,1);
+      else if(gn[1]===g) best=Math.max(best, subjectIsTheDraw(r)?0.175:0.5);
+    }
+    return best;
+  }
+  // Directing is inherently central (1.0). Cast falls off by billing position; a record with no
+  // billing backfill scores 0.4 -- deliberately below 4th-billed (0.55) so unknown never
+  // outranks a KNOWN supporting credit, but above the floor so it still surfaces.
+  // Calibrated against the user's own stated ordering (2026-08-18): a LEAD in a film whose
+  // requested genre is secondary must outrank a SUPPORTING credit in a primary-genre film --
+  // Ad Astra (Pitt 1st, drama secondary = 0.5) above The Big Short (Pitt 4th, drama primary
+  // = 0.45). A shallower first pass [1,.85,.7,.55,.45] inverted that pair, which is what
+  // testing against the stated order caught. Reads as: 1st = the vehicle, 2nd = co-lead,
+  // 3rd = major supporting, 4th+ = ensemble, 6th+ = a credit (0.25; x0.5 secondary genre
+  // lands under the floor, so a bit-part never rides in on a genre technicality).
+  var BILLING_PROM=[1,0.85,0.6,0.45,0.35];
+  function smartTalentProm(r){
+    if(!S.smartPeople.length) return 1;
+    var best=0;
+    for(var i=0;i<S.smartPeople.length;i++){
+      var sp=S.smartPeople[i], nm=sp.name.toLowerCase();
+      for(var j=0;j<sp.roles.length;j++){
+        if(sp.roles[j]==='director'){
+          if((r.di||'').toLowerCase().indexOf(nm)>=0) best=Math.max(best,1);
+        } else if(sp.roles[j]==='cast'){
+          var ctb=toks(r.ctb), pos=-1;
+          for(var k=0;k<ctb.length;k++) if(ctb[k].toLowerCase()===nm){pos=k;break;}
+          if(pos>=0) best=Math.max(best, pos<BILLING_PROM.length?BILLING_PROM[pos]:0.25);
+          else if((r.ca||'').toLowerCase().indexOf(nm)>=0) best=Math.max(best,0.4);
+        }
+      }
+    }
+    return best;
+  }
+  // Multiplicative on purpose: a lead in a film whose requested genre is incidental, and a
+  // bit-part in a perfect genre match, SHOULD both rank low. Either factor near zero sinks it.
+  function smartRelevance(r){ return smartTalentProm(r)*smartGenreProm(r); }
+  function smartRelevanceActive(){ return !!(S.smartPeople.length&&S.primaryGenre.length); }
   function pass(r,skip){
     // Coverage gate: hide pre-census "comp" titles from rankings/totals by default.
     // They still surface on a deliberate lookup -- an active title search, an explicit
@@ -2404,6 +2479,12 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
       }
       if(!spHit) return false;
     }
+    // Combined relevance floor -- the gate the two prominence factors exist for. Checked here
+    // (not inside either single-axis gate) because the failing cases are products: a lead in a
+    // commercially-incidental genre match (1.0*0.175) and a 6th-billed credit in a genuine
+    // secondary-genre film (0.35*0.5) both land at 0.175 and both should drop, though neither
+    // axis alone looks bad enough to catch it.
+    if(smartRelevanceActive() && smartRelevance(r)<SMART_REL_MIN) return false;
     if(S.studios.length){
       var stHit=false;
       for(var sti=0; sti<S.studios.length; sti++){
@@ -2435,7 +2516,18 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     // second) -- checking only that slot is what "give me dramas" means in plain English.
     // Separate array from S.genres on purpose: the manual Genre dropdown keeps its documented
     // ANY/ALL semantics untouched; this is a stricter, ADDITIONAL gate smart search alone uses.
-    if(S.primaryGenre.length && (!r.gn || !r.gn.length || S.primaryGenre.indexOf(r.gn[0])<0)) return false;
+    // 2026-08-18 (user-directed): when a PERSON is also named, the genre gate goes INCLUSIVE
+    // (primary OR secondary) and prominence ranking sorts it out -- "Will Smith action" must
+    // reach Men in Black / I, Robot (comedy- and sci_fi-primary with action secondary), and
+    // "Brad Pitt dramas" must reach Ad Astra (sci_fi primary, drama secondary). Safe ONLY
+    // because the person filter has already narrowed hard; genre-alone stays strict-primary
+    // below, preserving the 8/14 fix (an inclusive "drama" across 4,704 films re-floods with
+    // Black Panther / Lion King / Hunger Games). See smartGenreProm() for the scoring.
+    if(S.primaryGenre.length){
+      if(S.smartPeople.length){
+        if(smartGenreProm(r)<=0) return false;   // must hit primary OR secondary; rank sorts it
+      } else if(!r.gn || !r.gn.length || S.primaryGenre.indexOf(r.gn[0])<0) return false;
+    }
     // Commercial driver (smart search only -- 2026-08-14, user report): "star driven" matched
     // on starTier() dollar threshold alone let IP/concept/filmmaker-driven films through
     // whenever any top-2-billed cast member's career median happened to clear the bar (Maze
@@ -2617,6 +2709,13 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
       fl.sort(function(a,b){return a.d<b.d?-asc:(a.d>b.d?asc:0);});
     } else {
       fl.sort(function(a,b){return metricValue(b,S.boxtype)-metricValue(a,S.boxtype);});
+      // Relevance ordering for person+genre smart queries (2026-08-18): "Brad Pitt dramas"
+      // wants Pitt's own dramas first, not the biggest film he appears anywhere in. Applied
+      // ONLY while Sort By sits at its 'ww' default -- picking an explicit sort is a
+      // deliberate instruction and always wins (same posture as every other control on this
+      // board; Comp Mode is the one exception, and it says so in its banner).
+      if(smartRelevanceActive()&&S.boxtype==='ww')
+        fl.sort(function(a,b){return smartRelevance(b)-smartRelevance(a)||b.ww-a.ww;});
     }
 
     // Comp Mode: replace the filtered view with target + ranked comp set. Placed AFTER the
@@ -3137,6 +3236,12 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     document.getElementById('smartmiss').textContent=
       (smartChipsApplied.length&&smartLeftover)?('Didn\'t understand: “'+smartLeftover+'”'):'';
     document.getElementById('smartcompnote').textContent=smartCompNote;
+    // Never rank silently: if relevance ordering took over from the Sort By control, say so
+    // and say what it means (2026-08-18 -- same standard as the "didn't understand" line).
+    document.getElementById('smartranknote').textContent=
+      (smartRelevanceActive()&&S.boxtype==='ww')
+        ? 'Ranked by relevance: how central the person is to the film (billing) x how central the genre is. Pick a Sort By to override.'
+        : '';
   }
   document.getElementById('f-smart-apply').onclick=applySmartQuery;
   document.getElementById('f-smart').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();applySmartQuery();}};
@@ -3613,6 +3718,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     document.getElementById('smartchips').innerHTML='';
     document.getElementById('smartmiss').textContent='';
     document.getElementById('smartcompnote').textContent='';
+    document.getElementById('smartranknote').textContent='';
   }
   function resetAll(){
     resetState(); render(); window.scrollTo(0,0);
