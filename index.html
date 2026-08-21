@@ -129,8 +129,8 @@ body.compmode .controls .ctl-view{opacity:1;pointer-events:auto}
 .gpanel.open{display:block}
 .gmode{display:flex;gap:6px;margin-bottom:9px}
 .gmode .mchip{flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--dim);background:#0e1118;border:1px solid var(--line);border-radius:7px;padding:5px 0;cursor:pointer;user-select:none}
-.pmode{margin-bottom:0}
-.pmode .mchip{flex:none;padding:5px 14px}
+.pmode,.amode{margin-bottom:0}
+.pmode .mchip,.amode .mchip{flex:none;padding:5px 14px}
 .gmode .mchip.on{color:#04122b;background:var(--accent);border-color:var(--accent)}
 .gselrow{display:flex;gap:14px;margin-bottom:8px;padding:0 2px}
 .gsel{font-size:11px;font-weight:600;color:var(--accent);cursor:pointer;user-select:none}
@@ -1992,7 +1992,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   // Advanced (second-tier) filters live in the same S object: bud*/rc*/ra* min-max ranges
   // (0 = unset) and mpa[] (empty = all ratings). A record missing a filtered field is
   // excluded while that advanced filter is active (coverage disclosed in the footer).
-  var S={q:"",studios:[],labels:[],years:[],dfrom:"",dto:"",genres:[],primaryGenre:[],commercialDriver:[],gmode:"any",subgenres:[],smode:"any",tiers:[],size:"",opmin:0,opmax:0,thmin:0,thmax:0,sourceIpCategory:[],sourceIpDetail:[],comicBook:false,statuses:[],rerelease:false,boxtype:"ww",boLayers:[{metric:"dom",min:0,max:0}],peopleLayers:[{role:"director",name:""}],pmode:"any",smartPeople:[],awardLayers:[{aw:"",cat:"",res:"w"}],comps:false,localLang:false,events:false,budmin:0,budmax:0,rcmin:0,rcmax:0,ramin:0,ramax:0,mpa:[],excl:[],pins:[],comp:"",view:""};
+  var S={q:"",studios:[],labels:[],years:[],dfrom:"",dto:"",genres:[],primaryGenre:[],commercialDriver:[],gmode:"any",subgenres:[],smode:"any",tiers:[],size:"",opmin:0,opmax:0,thmin:0,thmax:0,sourceIpCategory:[],sourceIpDetail:[],comicBook:false,statuses:[],rerelease:false,boxtype:"ww",boLayers:[{metric:"dom",min:0,max:0}],peopleLayers:[{role:"director",name:""}],pmode:"any",smartPeople:[],awardLayers:[{aw:"",cat:"",res:"w"}],amode:"all",comps:false,localLang:false,events:false,budmin:0,budmax:0,rcmin:0,rcmax:0,ramin:0,ramax:0,mpa:[],excl:[],pins:[],comp:"",view:""};
   var SG_LABELS={"anime": "Anime", "biopic": "Biopic", "buddy": "Buddy", "coming_of_age": "Coming of Age", "concert_film": "Concert Film", "contained": "Contained", "creature_feature": "Creature Feature", "crime": "Crime", "dark_comedy": "Dark Comedy", "disaster": "Disaster", "dystopian": "Dystopian", "fairy_tale_folklore": "Fairy Tale / Folklore", "faith": "Faith", "foreign_language": "Foreign Language", "found_footage": "Found Footage", "heist": "Heist", "holiday": "Holiday", "martial_arts": "Martial Arts", "military_war": "Military / War", "mockumentary": "Mockumentary", "murder_mystery": "Murder Mystery", "noir": "Noir", "opera_stage_capture": "Opera / Stage Capture", "parody_spoof": "Parody / Spoof", "historical_period": "Period / Historical", "political": "Political", "post_apocalyptic": "Post-Apocalyptic", "psychological": "Psychological", "road_movie": "Road Movie", "satire": "Satire", "slasher": "Slasher", "space": "Space", "sports": "Sports", "espionage_spy": "Spy / Espionage", "star_led": "Star-Led", "superhero": "Superhero", "supernatural": "Supernatural", "survival": "Survival", "time_travel": "Time Travel", "true_crime": "True Crime", "vampire": "Vampire", "western": "Western", "young_adult": "Young Adult", "zombie": "Zombie"};
 
   // Count of active ADVANCED filters (per-filter: a min/max range counts once, not twice).
@@ -2271,7 +2271,19 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     return aw;
   }
   function renderAwardLayers(){
-    document.getElementById('award-layers').innerHTML=S.awardLayers.map(function(lay,idx){
+    // ANY/OR vs ALL/AND toggle (2026-08-18, user-directed — same mchip pattern already used
+    // by Genre/Subgenre/People). Default ALL, not ANY like People: awards had only ONE fixed
+    // behavior before this toggle existed (every active layer required, AND'd) and defaulting
+    // to ALL preserves it exactly for anyone who already has multiple award layers set — this
+    // is a new CHOICE being added, not a silent change to what "two award layers" has always
+    // meant. Shown only once a second layer exists, same as People (mode is meaningless with one).
+    var amode=S.awardLayers.length>1
+      ?('<div class="gmode amode" title="Match ANY = films winning/nominated for at least one of these (Oscar Best Picture OR Cannes Palme d\'Or); Match ALL = only films with every one (both together)">'
+        +'<span class="mchip'+(S.amode==='all'?'':' on')+'" data-am="any" role="button" tabindex="0">Match ANY</span>'
+        +'<span class="mchip'+(S.amode==='all'?' on':'')+'" data-am="all" role="button" tabindex="0">Match ALL</span>'
+        +'</div>')
+      :'';
+    document.getElementById('award-layers').innerHTML=amode+S.awardLayers.map(function(lay,idx){
       var awopts='<option value=""'+(lay.aw?'':' selected')+'>Select award&hellip;</option>'+
         AW_TYPES.map(function(a){
           return '<option value="'+a[0]+'"'+(lay.aw===a[0]?' selected':'')+'>'+a[1]+'</option>';
@@ -2309,6 +2321,11 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
       S.awardLayers.push({aw:'',cat:'',res:'w'});
       renderAwardLayers(); render();
     };
+    Array.prototype.forEach.call(box.querySelectorAll('.amode .mchip'),function(ch){
+      var set=function(){S.amode=ch.getAttribute('data-am');renderAwardLayers();render();};
+      ch.onclick=set;
+      ch.onkeydown=function(e){if(e.key===' '||e.key==='Enter'){e.preventDefault();set();}};
+    });
   }
   function awardMatch(r,lay){
     var A=r.aw; if(!A) return false;
@@ -2614,12 +2631,21 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
       if(blay.min>0 && bmv<blay.min) return false;
       if(blay.max>0 && bmv>blay.max) return false;
     }
-    // Awards: every active layer must match (AND) — e.g. Oscars Best Picture Won AND
-    // Cannes Won requires both on the same film. No awards data = drops out while active.
+    // Awards: ANY (a film matching at least one active layer) or ALL (every active layer must
+    // match the same film), same ANY/ALL toggle + pact/phit pattern as People above (2026-08-18,
+    // user-directed — "reflect the same functionality as the person filters"). Default ALL
+    // preserves the original fixed behavior for anyone with multiple layers already set; ANY
+    // is the new option ("Oscars Best Picture OR Cannes Palme d'Or" instead of requiring both).
+    // No awards data on the record = drops out while that layer is active, same as before.
+    var awact=0,awhit=0;
     for(var awi=0;awi<S.awardLayers.length;awi++){
       var alay=S.awardLayers[awi];
-      if(alay.aw && !awardMatch(r,alay)) return false;
+      if(!alay.aw) continue;
+      awact++;
+      if(awardMatch(r,alay)) awhit++;
+      else if(S.amode==='all') return false;
     }
+    if(awact&&!awhit) return false;
     // Advanced filters. Records missing the field drop out while the filter is active.
     if(S.budmin>0 && (r.bud==null || r.bud<S.budmin)) return false;
     if(S.budmax>0 && (r.bud==null || r.bud>S.budmax)) return false;
@@ -3666,7 +3692,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   // earlier "view survives Reset" call). resetState() clears without rendering so presets
   // (the NOW IN RELEASE live board) can layer on top and render once.
   function resetState(){
-    S={q:"",studios:[],labels:[],years:[],dfrom:"",dto:"",genres:[],primaryGenre:[],commercialDriver:[],gmode:"any",subgenres:[],smode:"any",tiers:[],size:"",opmin:0,opmax:0,thmin:0,thmax:0,sourceIpCategory:[],sourceIpDetail:[],comicBook:false,statuses:[],rerelease:false,boxtype:"ww",boLayers:[{metric:"dom",min:0,max:0}],peopleLayers:[{role:"director",name:""}],pmode:"any",smartPeople:[],awardLayers:[{aw:"",cat:"",res:"w"}],comps:false,localLang:false,events:false,budmin:0,budmax:0,rcmin:0,rcmax:0,ramin:0,ramax:0,mpa:[],excl:[],pins:[],comp:"",view:""};
+    S={q:"",studios:[],labels:[],years:[],dfrom:"",dto:"",genres:[],primaryGenre:[],commercialDriver:[],gmode:"any",subgenres:[],smode:"any",tiers:[],size:"",opmin:0,opmax:0,thmin:0,thmax:0,sourceIpCategory:[],sourceIpDetail:[],comicBook:false,statuses:[],rerelease:false,boxtype:"ww",boLayers:[{metric:"dom",min:0,max:0}],peopleLayers:[{role:"director",name:""}],pmode:"any",smartPeople:[],awardLayers:[{aw:"",cat:"",res:"w"}],amode:"all",comps:false,localLang:false,events:false,budmin:0,budmax:0,rcmin:0,rcmax:0,ramin:0,ramax:0,mpa:[],excl:[],pins:[],comp:"",view:""};
     syncVtoggle();
     document.getElementById('f-q').value='';
     document.getElementById('f-pin').value='';
@@ -3948,7 +3974,16 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     {k:'bud',h:'Estimated Budget',ty:'usd',tot:'sum',get:function(r){return r.bud>0?r.bud:null;}},
     {k:'wxb',h:'WWBO/Budget',ty:'mult',get:function(r){return (r.ww>0&&r.bud>0)?r.ww/r.bud:null;}},
     {k:'hold',h:'Latest Hold',ty:'spct',def:false,get:function(r){return r.ldrop;}},
-    {k:'ir',h:'In Release',ty:'str',def:false,get:function(r){return r.s==='in_release'?'Yes':null;}}
+    {k:'ir',h:'In Release',ty:'str',def:false,get:function(r){return r.s==='in_release'?'Yes':null;}},
+    // RT scores as report-export column options (2026-08-18, user request). r.rc/r.ra are
+    // already 0-100 (Math.round(r.rc)+'%' elsewhere in this file), so the getter divides by
+    // 100 to match what ty:'pct' expects everywhere it's consumed (tcell/pdfCell multiply by
+    // 100 back for display; Excel's percent cell style expects the same 0-1 convention) --
+    // same normalization ipct/rpct/cpct already do, reusing the existing type rather than
+    // adding a new one that would need its own branch in every renderer. def:false: an
+    // OPTION in the Columns picker, not added to anyone's existing default export.
+    {k:'rtc',h:'RT Critics Score',ty:'pct',def:false,get:function(r){return typeof r.rc==='number'?r.rc/100:null;}},
+    {k:'rta',h:'RT Audience Score',ty:'pct',def:false,get:function(r){return typeof r.ra==='number'?r.ra/100:null;}}
   ];
   var REP_KEYS=RCOLS.map(function(c){return c.k;});
   var REP_DEF=RCOLS.filter(function(c){return c.def!==false;}).map(function(c){return c.k;});
