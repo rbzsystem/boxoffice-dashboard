@@ -797,7 +797,9 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
       ?('<div class="gchips">'+topGenres(r.gn).map(function(g){return '<span class="gchip">'+esc(g)+'</span>';}).join('')+'</div>')
       :'';
     var inner='<div class="rankbar" style="background:'+r.bg_+'"></div>'+panel
-      +'<div class="cap"><div class="studiotag">'+esc(dlab(r))+'</div>'
+      +'<div class="cap"><div class="studiotag">'+esc(dlab(r))
+        +(function(){var pl=prodLabels(r);var efl=r.lab||MAIN_OF_GROUP[r.g]||'';
+          return (pl.length&&S.labels.indexOf(efl)<0)?(' &middot; '+esc(pl.join('/'))+' (produced)'):'';}())+'</div>'
       +'<div class="title">'+esc(r.t)+' <span class="date">('+mdy(r.d)+')</span></div>'
       +head
       +'<div class="split">'+split+'</div>'
@@ -2838,6 +2840,8 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     var plbl=peopleLabel(); if(plbl) parts.push(plbl);
     if(S.statuses.length) parts.push(statusLabel());
     parts.push(show.length+' titles');
+    var pcn=prodCount(show);
+    if(pcn) parts.push(pcn+' by producer credit');
     if(inComp){
       var ct=BYSLUG[S.comp];
       parts=['Comp set: '+ct.t+' ('+ct.y+')','target + '+(show.length-1)+' comps'];
@@ -3997,6 +4001,8 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     if(S.q) parts.push('"'+S.q+'"');
     var plbl=peopleLabel(); if(plbl) parts.push(plbl);
     if(S.statuses.length) parts.push(statusLabel());
+    var pcn=prodCount(LAST_SHOWN||[]);
+    if(pcn) parts.push('(incl '+pcn+' by producer credit)');
     return parts.join(' ')+' Worldwide Box Office';
   }
   // Column model: k=pref key, h=header, ty=str|date|count|usd|pct|mult (drives Excel
@@ -4011,6 +4017,26 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   // (Disney/Pixar, Sony/Marvel, Universal/Illumination) rather than the label alone -- the
   // bare label silently dropped the actual distributor of record (user-directed 2026-08-09).
   function dlab(r){return (r.lab&&r.lab!==r.g)?(r.g+'/'+r.lab):r.g;}
+  // Producer-credit disclosure (2026-09-02). The Label filter matches a banner credited in
+  // film.production_companies as well as one in the distributor credit, so a Legendary view
+  // legitimately contains A Minecraft Movie and Jurassic World. The report table SUMS its
+  // money columns, so an undisclosed producer-credit row silently inflates a banner's total
+  // ($2.98B of Jurassic World + Fallen Kingdom into a "Legendary" export). These two helpers
+  // make the basis visible wherever the scope is named or a row is drawn.
+  function prodLabels(r){
+    if(!S.labels.length||!r.labx) return [];
+    var out=[];
+    for(var i=0;i<r.labx.length;i++) if(S.labels.indexOf(r.labx[i])>=0) out.push(r.labx[i]);
+    return out;
+  }
+  function prodCount(rows){
+    var n=0;
+    for(var i=0;i<rows.length;i++){
+      var efl=rows[i].lab||MAIN_OF_GROUP[rows[i].g]||'';
+      if(S.labels.indexOf(efl)<0 && prodLabels(rows[i]).length) n++;
+    }
+    return n;
+  }
   function chinaOf(r){return (typeof r.cn==='number'&&r.cn>0)?r.cn:0;}
   var RCOLS=[
     {k:'title',h:'Title',ty:'str',get:function(r){return r.t;}},
