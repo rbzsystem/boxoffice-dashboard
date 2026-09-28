@@ -449,6 +449,14 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
         <label class="gopt"><input type="checkbox" data-y="2026"> 2026</label><label class="gopt"><input type="checkbox" data-y="2025"> 2025</label><label class="gopt"><input type="checkbox" data-y="2024"> 2024</label><label class="gopt"><input type="checkbox" data-y="2023"> 2023</label><label class="gopt"><input type="checkbox" data-y="2022"> 2022</label><label class="gopt"><input type="checkbox" data-y="2021"> 2021</label><label class="gopt"><input type="checkbox" data-y="2020"> 2020</label><label class="gopt"><input type="checkbox" data-y="2019"> 2019</label><label class="gopt"><input type="checkbox" data-y="2018"> 2018</label><label class="gopt"><input type="checkbox" data-y="2017"> 2017</label><label class="gopt"><input type="checkbox" data-y="2016"> 2016</label><label class="gopt"><input type="checkbox" data-y="2015"> 2015</label><label class="gopt"><input type="checkbox" data-y="2014"> 2014</label><label class="gopt"><input type="checkbox" data-y="2013"> 2013</label><label class="gopt"><input type="checkbox" data-y="2012"> 2012</label><label class="gopt"><input type="checkbox" data-y="2011"> 2011</label><label class="gopt"><input type="checkbox" data-y="2010"> 2010</label><label class="gopt"><input type="checkbox" data-y="2009"> 2009</label><label class="gopt"><input type="checkbox" data-y="2008"> 2008</label><label class="gopt"><input type="checkbox" data-y="2007"> 2007</label><label class="gopt"><input type="checkbox" data-y="2006"> 2006</label><label class="gopt"><input type="checkbox" data-y="2005"> 2005</label><label class="gopt"><input type="checkbox" data-y="2004"> 2004</label><label class="gopt"><input type="checkbox" data-y="2003"> 2003</label><label class="gopt"><input type="checkbox" data-y="2002"> 2002</label><label class="gopt"><input type="checkbox" data-y="2001"> 2001</label><label class="gopt"><input type="checkbox" data-y="2000"> 2000</label><label class="gopt"><input type="checkbox" data-y="1999"> 1999</label>
       </div>
     </div></div>
+  <div class="ctl"><label>Release Month</label>
+    <div class="gwrap" id="monthwrap">
+      <button type="button" class="gbtn" id="f-month-btn" aria-haspopup="true" aria-expanded="false">All Months</button>
+      <div class="gpanel" id="monthpanel">
+        <label class="gopt gopt-all"><input type="checkbox" id="f-month-all"> Select all</label>
+        <label class="gopt"><input type="checkbox" data-m2="01"> January</label><label class="gopt"><input type="checkbox" data-m2="02"> February</label><label class="gopt"><input type="checkbox" data-m2="03"> March</label><label class="gopt"><input type="checkbox" data-m2="04"> April</label><label class="gopt"><input type="checkbox" data-m2="05"> May</label><label class="gopt"><input type="checkbox" data-m2="06"> June</label><label class="gopt"><input type="checkbox" data-m2="07"> July</label><label class="gopt"><input type="checkbox" data-m2="08"> August</label><label class="gopt"><input type="checkbox" data-m2="09"> September</label><label class="gopt"><input type="checkbox" data-m2="10"> October</label><label class="gopt"><input type="checkbox" data-m2="11"> November</label><label class="gopt"><input type="checkbox" data-m2="12"> December</label>
+      </div>
+    </div></div>
   <div class="ctl" title="Release date range — combines with every other filter"><label>Date Range</label>
     <div class="datewrap">
       <input type="date" id="f-dfrom" aria-label="Released from">
@@ -2016,7 +2024,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   // Advanced (second-tier) filters live in the same S object: bud*/rc*/ra* min-max ranges
   // (0 = unset) and mpa[] (empty = all ratings). A record missing a filtered field is
   // excluded while that advanced filter is active (coverage disclosed in the footer).
-  var S={q:"",studios:[],labels:[],years:[],dfrom:"",dto:"",genres:[],primaryGenre:[],commercialDriver:[],gmode:"any",subgenres:[],smode:"any",tiers:[],size:"",opmin:0,opmax:0,thmin:0,thmax:0,sourceIpCategory:[],sourceIpDetail:[],comicBook:false,statuses:[],rerelease:false,boxtype:"ww",boLayers:[{metric:"dom",min:0,max:0}],peopleLayers:[{role:"director",name:""}],pmode:"any",smartPeople:[],awardLayers:[{aw:"",cat:"",res:"w"}],amode:"all",comps:false,localLang:false,events:false,cofin:false,budmin:0,budmax:0,rcmin:0,rcmax:0,ramin:0,ramax:0,mpa:[],excl:[],pins:[],comp:"",view:""};
+  var S={q:"",studios:[],labels:[],years:[],months:[],dfrom:"",dto:"",genres:[],primaryGenre:[],commercialDriver:[],gmode:"any",subgenres:[],smode:"any",tiers:[],size:"",opmin:0,opmax:0,thmin:0,thmax:0,sourceIpCategory:[],sourceIpDetail:[],comicBook:false,statuses:[],rerelease:false,boxtype:"ww",boLayers:[{metric:"dom",min:0,max:0}],peopleLayers:[{role:"director",name:""}],pmode:"any",smartPeople:[],awardLayers:[{aw:"",cat:"",res:"w"}],amode:"all",comps:false,localLang:false,events:false,cofin:false,budmin:0,budmax:0,rcmin:0,rcmax:0,ramin:0,ramax:0,mpa:[],excl:[],pins:[],comp:"",view:""};
   var SG_LABELS={"anime": "Anime", "biopic": "Biopic", "buddy": "Buddy", "coming_of_age": "Coming of Age", "concert_film": "Concert Film", "contained": "Contained", "creature_feature": "Creature Feature", "crime": "Crime", "dark_comedy": "Dark Comedy", "disaster": "Disaster", "dystopian": "Dystopian", "fairy_tale_folklore": "Fairy Tale / Folklore", "faith": "Faith", "foreign_language": "Foreign Language", "found_footage": "Found Footage", "heist": "Heist", "holiday": "Holiday", "martial_arts": "Martial Arts", "military_war": "Military / War", "mockumentary": "Mockumentary", "murder_mystery": "Murder Mystery", "noir": "Noir", "opera_stage_capture": "Opera / Stage Capture", "parody_spoof": "Parody / Spoof", "historical_period": "Period / Historical", "political": "Political", "post_apocalyptic": "Post-Apocalyptic", "psychological": "Psychological", "road_movie": "Road Movie", "satire": "Satire", "slasher": "Slasher", "space": "Space", "sports": "Sports", "espionage_spy": "Spy / Espionage", "star_led": "Star-Led", "superhero": "Superhero", "supernatural": "Supernatural", "survival": "Survival", "time_travel": "Time Travel", "true_crime": "True Crime", "vampire": "Vampire", "western": "Western", "young_adult": "Young Adult", "zombie": "Zombie"};
 
   // Count of active ADVANCED filters (per-filter: a min/max range counts once, not twice).
@@ -2042,7 +2050,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
 
   function activeFilterCount(){
     var c=0;
-    if(S.q)c++; if(S.tiers.length)c++; if(S.studios.length)c++; if(S.labels.length)c++; if(S.years.length)c++;
+    if(S.q)c++; if(S.tiers.length)c++; if(S.studios.length)c++; if(S.labels.length)c++; if(S.years.length)c++; if(S.months.length)c++;
     if(S.dfrom||S.dto)c++;
     if(S.comps)c++;
     if(S.rerelease)c++;
@@ -2552,6 +2560,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
       if(!lhit) return false;
     }
     if(S.years.length && S.years.indexOf(r.y)<0) return false;
+    if(S.months.length && S.months.indexOf((r.d||'').slice(5,7))<0) return false;
     // Date range: ISO strings compare lexicographically. A range pick also lifts the census
     // floor gate the same way an explicit year pick does (deliberate-lookup semantics).
     if(S.dfrom && r.d<S.dfrom) return false;
@@ -2843,6 +2852,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
       }
     }
     if(S.years.length&&!allYearsSel) parts.push(S.years.slice().sort().reverse().join(', '));
+    if(S.months.length&&S.months.length<12) parts.push(monthLabel());
     if(S.genres.length) parts.push(S.genres.join(S.gmode==='all'?' + ':' / '));
     if(S.subgenres.length) parts.push(S.subgenres.map(function(t){return SG_LABELS[t]||t;}).join(S.smode==='all'?' + ':' / '));
     var plbl=peopleLabel(); if(plbl) parts.push(plbl);
@@ -3370,6 +3380,43 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
       syncYearAll(); updYearBtn(); render();
     };
   });
+  // Release Month popover (2026-09-28, user request) — mirrors Year exactly: Select all +
+  // per-month boxes, any subset. Button names the single month or "first +N".
+  var MONTH_NAMES={'01':'January','02':'February','03':'March','04':'April','05':'May','06':'June','07':'July','08':'August','09':'September','10':'October','11':'November','12':'December'};
+  function monthsSorted(){return S.months.slice().sort();}
+  function monthLabel(){return monthsSorted().map(function(m){return MONTH_NAMES[m];}).join(', ');}
+  function updMonthBtn(){
+    var b=document.getElementById('f-month-btn'), ms=monthsSorted();
+    b.textContent=ms.length===12?'All Months':(ms.length?(MONTH_NAMES[ms[0]]+(ms.length>1?(' +'+(ms.length-1)):'')):'All Months');
+  }
+  document.getElementById('f-month-btn').onclick=function(){
+    var open=document.getElementById('monthpanel').classList.toggle('open');
+    this.classList.toggle('open',open);
+    this.setAttribute('aria-expanded',open?'true':'false');
+  };
+  var monthBoxes=Array.prototype.slice.call(document.querySelectorAll('#monthpanel .gopt input[data-m2]'));
+  var mAll=document.getElementById('f-month-all');
+  function syncMonthAll(){
+    mAll.checked=S.months.length===monthBoxes.length;
+    mAll.indeterminate=S.months.length>0&&S.months.length<monthBoxes.length;
+  }
+  mAll.onchange=function(){
+    var on=mAll.checked;
+    S.months=[];
+    monthBoxes.forEach(function(cb){
+      cb.checked=on;
+      if(on) S.months.push(cb.getAttribute('data-m2'));
+    });
+    syncMonthAll(); updMonthBtn(); render();
+  };
+  monthBoxes.forEach(function(cb){
+    cb.onchange=function(){
+      var v=cb.getAttribute('data-m2'), i=S.months.indexOf(v);
+      if(cb.checked&&i<0) S.months.push(v);
+      if(!cb.checked&&i>=0) S.months.splice(i,1);
+      syncMonthAll(); updMonthBtn(); render();
+    };
+  });
   document.getElementById('f-dfrom').onchange=function(e){S.dfrom=e.target.value;render();};
   document.getElementById('f-dto').onchange=function(e){S.dto=e.target.value;render();};
   // ---- screens ranges (integers; 0 = unset) ----
@@ -3465,6 +3512,11 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
       document.getElementById('yearpanel').classList.remove('open');
       var by=document.getElementById('f-year-btn');
       by.classList.remove('open'); by.setAttribute('aria-expanded','false');
+    }
+    if(!e.target.closest('#monthwrap')){
+      document.getElementById('monthpanel').classList.remove('open');
+      var bm=document.getElementById('f-month-btn');
+      bm.classList.remove('open'); bm.setAttribute('aria-expanded','false');
     }
     if(!e.target.closest('#statuswrap')){
       document.getElementById('statuspanel').classList.remove('open');
@@ -3746,7 +3798,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   function closeAllPanels(){
     [['gpanel','f-genre-btn'],['sgpanel','f-subgenre-btn'],['tierpanel','f-tier-btn'],
      ['sicpanel','f-sic-btn'],['addlpanel','f-addl-btn'],['sidpanel','f-sid-btn'],
-     ['stupanel','f-studio-btn'],['yearpanel','f-year-btn'],['statuspanel','f-status-btn'],
+     ['stupanel','f-studio-btn'],['yearpanel','f-year-btn'],['monthpanel','f-month-btn'],['statuspanel','f-status-btn'],
      ['labpanel','f-label-btn']].forEach(function(p){
       document.getElementById(p[0]).classList.remove('open');
       var b=document.getElementById(p[1]);
@@ -3765,7 +3817,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
   // earlier "view survives Reset" call). resetState() clears without rendering so presets
   // (the NOW IN RELEASE live board) can layer on top and render once.
   function resetState(){
-    S={q:"",studios:[],labels:[],years:[],dfrom:"",dto:"",genres:[],primaryGenre:[],commercialDriver:[],gmode:"any",subgenres:[],smode:"any",tiers:[],size:"",opmin:0,opmax:0,thmin:0,thmax:0,sourceIpCategory:[],sourceIpDetail:[],comicBook:false,statuses:[],rerelease:false,boxtype:"ww",boLayers:[{metric:"dom",min:0,max:0}],peopleLayers:[{role:"director",name:""}],pmode:"any",smartPeople:[],awardLayers:[{aw:"",cat:"",res:"w"}],amode:"all",comps:false,localLang:false,events:false,cofin:false,budmin:0,budmax:0,rcmin:0,rcmax:0,ramin:0,ramax:0,mpa:[],excl:[],pins:[],comp:"",view:""};
+    S={q:"",studios:[],labels:[],years:[],months:[],dfrom:"",dto:"",genres:[],primaryGenre:[],commercialDriver:[],gmode:"any",subgenres:[],smode:"any",tiers:[],size:"",opmin:0,opmax:0,thmin:0,thmax:0,sourceIpCategory:[],sourceIpDetail:[],comicBook:false,statuses:[],rerelease:false,boxtype:"ww",boLayers:[{metric:"dom",min:0,max:0}],peopleLayers:[{role:"director",name:""}],pmode:"any",smartPeople:[],awardLayers:[{aw:"",cat:"",res:"w"}],amode:"all",comps:false,localLang:false,events:false,cofin:false,budmin:0,budmax:0,rcmin:0,rcmax:0,ramin:0,ramax:0,mpa:[],excl:[],pins:[],comp:"",view:""};
     syncVtoggle();
     document.getElementById('f-q').value='';
     document.getElementById('f-pin').value='';
@@ -3781,6 +3833,8 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     updAddlBtn();
     Array.prototype.forEach.call(document.querySelectorAll('#yearpanel .gopt input'),function(cb){cb.checked=false;cb.indeterminate=false;});
     updYearBtn();
+    Array.prototype.forEach.call(document.querySelectorAll('#monthpanel .gopt input'),function(cb){cb.checked=false;cb.indeterminate=false;});
+    updMonthBtn();
     document.getElementById('f-dfrom').value='';
     document.getElementById('f-dto').value='';
     Array.prototype.forEach.call(document.querySelectorAll('#gpanel .gopt input'),function(cb){cb.checked=false;});
@@ -4005,6 +4059,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     if(S.comp&&BYSLUG[S.comp]) return 'Comp Set: '+BYSLUG[S.comp].t+' ('+BYSLUG[S.comp].y+') Worldwide Box Office';
     var parts=[scopeText()];
     if(S.years.length) parts.push(S.years.slice().sort().reverse().join(', '));
+    if(S.months.length&&S.months.length<12) parts.push(monthLabel());
     if(S.dfrom||S.dto) parts.push((S.dfrom?mdy(S.dfrom):'…')+' to '+(S.dto?mdy(S.dto):'…'));
     if(S.genres.length) parts.push(S.genres.join(S.gmode==='all'?' + ':' / '));
     if(S.subgenres.length) parts.push(S.subgenres.map(function(t){return SG_LABELS[t]||t;}).join(S.smode==='all'?' + ':' / '));
