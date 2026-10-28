@@ -2858,6 +2858,15 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     var plbl=peopleLabel(); if(plbl) parts.push(plbl);
     if(S.statuses.length) parts.push(statusLabel());
     parts.push(show.length+' titles');
+    // Selection totals (2026-10-28, user request): combined domestic and worldwide gross of the
+    // shown titles, in-release films at their current gross; recomputes with every filter.
+    var sDom=0,sWw=0;
+    for(var ti=0;ti<show.length;ti++){
+      if(show[ti].dom>0) sDom+=show[ti].dom;
+      if(show[ti].ww>0) sWw+=show[ti].ww;
+    }
+    if(sDom>0) parts.push(tot(sDom)+' domestic');
+    if(sWw>0) parts.push(tot(sWw)+' worldwide');
     var pcn=prodCount(show); if(pcn) parts.push(pcn+' by producer credit');
     var ccn=cofinCount(show); if(ccn) parts.push(ccn+' co-financed');
     if(inComp){
