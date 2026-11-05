@@ -2111,7 +2111,7 @@ footer details.fmore .fmoreinner p:last-child{margin-bottom:0}
     else if(intlUsed&&ib.legacy_absent)
       out.push('international reporting basis not recorded for '+ib.legacy_absent+' of '+show.length
         +'; their international figures are quoted as reported, not compared like-for-like');
-    // v4 reconciliation: say when the international-mix dimension did not score (basis not established/compatible)
+    // v4 reconciliation: say when the international-mix dimension did not score (reporting basis not recorded or not compatible)
     if(t.s!=='in_release'&&t.sp!=null){
       if(!intlComparable(t)) out.push('international mix not scored: the target\'s international basis is '
         +(t.wwc?'tied to a worldwide below domestic':(t.ibs==='unresolved'?'unresolved':'not recorded'))+' (figures display, not compared)');
